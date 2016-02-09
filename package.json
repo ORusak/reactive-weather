@@ -1,0 +1,25 @@
+{
+  "name": "reactive-weather",
+  "version": "0.0.1",
+  "description": "React.js single page app for weather forecast",
+  "main": "weather.js",
+  "scripts": {
+    "test": "test",
+    "start": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ORusak/reactive-weather.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ORusak/reactive-weather/issues"
+  },
+  "homepage": "https://github.com/ORusak/reactive-weather",
+  "keywords": [
+    "weather",
+    "react",
+    "javascript"
+  ],
+  "author": "Oleg Rusak",
+  "license": "MIT"
+}
