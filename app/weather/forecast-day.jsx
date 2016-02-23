@@ -14,17 +14,11 @@ class ForecastDay extends React.Component {
     }
 
     getTitle() {
-        let weather = this.props.day.weather[0];
-        return `${weather.main} (${weather.description})`;
+        return `${this.props.weather.name} (${this.props.weather.description})`;
     }
 
     getFormattedDay() {
-        let millisecond = parseInt(this.props.day.dt, 10);
-        if (!millisecond){
-            return "?";
-        }
-
-        let date = new Date(millisecond * 1000);
+        let date = this.props.weather.date;
         let formatter = new Intl.DateTimeFormat("en-US", {
             day: "2-digit",
             month: "short"
@@ -36,23 +30,27 @@ class ForecastDay extends React.Component {
         let day = this.getFormattedDay();
         let title = this.getTitle();
 
+        let tmin = `${Math.round(parseFloat(this.props.weather.temperature.min))}${String.fromCharCode(176)}`;
+        let tmax = `${Math.round(parseFloat(this.props.weather.temperature.max))}${String.fromCharCode(176)}`;
+
         return (
             <div className={css.forecast_day}>
                 <div>{day}</div>
                 <img alt={title} title={title}
-                     src={`http://openweathermap.org/img/w/${this.props.day.weather[0].icon}.png`}/>
-                <div>{this.props.day.temp.day} / {this.props.day.temp.night}</div>
+                     src={`http://openweathermap.org/img/w/${this.props.weather.icon}.png`}/>
+                <div>{tmin} / {tmax}</div>
             </div>
         )
     }
 }
 
 ForecastDay.defaultProps = {
-    day: {
-        weather: [
-            {}
-        ],
-        temp: {}
+    weather: {
+        icon: "01d",
+        temperature: {
+            min: '-',
+            max: '-'
+        }
     }
 };
 

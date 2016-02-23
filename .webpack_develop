@@ -1,1 +1,1 @@
-set NODE_ENV=development&webpack --watch --color
+set NODE_ENV=development&webpack --color

@@ -21,8 +21,8 @@ class Forecast extends React.Component {
 
     render (){
         let forecastDay = [];
-        this.props.weather.list.forEach((day) => {
-            forecastDay.push(<ForecastDay day={day}/>);
+        Object.keys(this.props.weather).forEach((key) => {
+            forecastDay.push(<ForecastDay weather={this.props.weather[key]}/>);
         });
         return (
             <div className={css.forecast}>
@@ -34,7 +34,6 @@ class Forecast extends React.Component {
 
 Forecast.defaultProps = {
     weather: {
-        list: []
     }
 };
 

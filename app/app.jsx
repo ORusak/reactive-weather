@@ -6,113 +6,113 @@ import React from 'react';
 
 import css from './style.styl';
 import Weather from './weather/weather.jsx';
+import Settings from './settings/settings.jsx';
+
+import DSOpenWeather from './weather/lib/open-weather.js';
+
+//todo: ленивую подгрузку остальных табов, webpack hot reload
 
 class WeatherApp extends React.Component {
     constructor (props){
         super (props);
 
         this.state = {
+            showTab: "weather",
             settings: {
-                unit_measure: {
-                    unit: "metric",
-                    unit_symbol: "C"
+                unit_measure: "metric",
+                units: {
+                    type: {
+                        default: {
+                            temperature: {
+                                name: "Kelvin",
+                                letter: "K"
+                            },
+                            wind: "m/s"
+                        },
+                        metric: {
+                            temperature: {
+                                name: "Celsius",
+                                letter: "C"
+                            },
+                            wind: "m/s"
+                        },
+                        imperial: {
+                            temperature: {
+                                name: "Fahrenheit",
+                                letter: "F"
+                            },
+                            wind: "mph"
+                        }
+                    },
+                    pressure: "hPa"
                 },
-                city: "Saint-Peterburg",
-                country: "ru",
                 lang: 'en',
+                index_API: 0,
                 API: {
-                    key: '7aaf25e81ae02f237ad79998501b8fe0',
-                    URL: 'http://api.openweathermap.org/data/2.5/',
-                    forecast: {
-                        method: 'forecast/daily',
-                        parametr: {
-                            cnt: 3
-                        }
-                    },
-                    weather: {
-                        method: 'weather'
-                    },
-                    history: {
-                        method: 'history/city',
-                        parametr: {
-                            cnt: 1,
-                            type: 'daily'
-                        }
+                    "openweathermap": {
+                        key: '7aaf25e81ae02f237ad79998501b8fe0'
                     }
                 }
             },
-            weather: {
-                weather: [],
-                sys: {},
-                wind: {},
-                clouds: {},
-                main: {}
-            },
-            forecast: {
-                list: []
-            },
-            history: {}
+            index_display_city: 519690,
+            cities: {
+                '519690': {
+                    id: 519690,
+                    name: "Saint-Peterburg",
+                    country: "ru",
+                    weather: {}
+                }
+            }
         };
     }
 
-    getRequest (methodAPI){
-        let data = [];
-        let settings = this.state.settings;
-        let parametr = settings.API[methodAPI].parametr;
-        let method = settings.API[methodAPI].method;
-
-        if (!method) {
-            throw new Error(`Not support method [${methodAPI}]`);
-        }
-
-        parametr = parametr ? parametr : {};
-
-        parametr = Array.from(parametr, (v, k) => [k, v]);
-
-        let param = new Map([
-            ['q',  settings.city + ',' + settings.country],
-            ['APPID', settings.API.key],
-            ['lang', settings.lang],
-            ['units', settings.unit_measure.unit]
-        ].concat(parametr));
-
-        param.forEach((value, key) => {
-            data.push(key + '='+ value);
+    componentDidMount (){
+        //
+        let dataSource = new DSOpenWeather ({
+            key: this.state.settings.API.openweathermap.key,
+            unit: this.state.settings.unit_measure,
+            lang: this.state.settings.lang,
+            city: this.state.cities[this.state.index_display_city]
         });
 
-        return method + '?' +  data.join('&');
-    }
+        dataSource.requestData((data) => {
+            this.setState ((previousState, currentProps) => {
 
-    getDataAPI (method, time){
-        let ctx =   this;
-        setTimeout(() => fetch (this.state.settings.API.URL + this.getRequest(method))
-            .then((response) => response.json())
-            .then((data) => {
-                let obj = {};
-                obj[method] = data;
-                ctx.setState(obj);
-            })
-            .catch(console.error), time);
-    }
+                let cityWeather = previousState.cities[data.id].weather;
+                //console.log(cityWeather);
 
-    componentDidMount (){
-        this.getDataAPI('weather');
-        this.getDataAPI('forecast', 1000);
+                Object.keys (data.weather).forEach((k) => {
+                    cityWeather [k] = data.weather[k];
+                });
 
-        //not in free subscription
-        //this.getDataAPI('history', 1000);
-        //this.getDataAPI('uvi', 1000);
+                return previousState;
+            });
+        });
     }
 
     render (){
+        let showTabContent = (event) => {
+            let activeClass = css.active;
+            let activeTab = document.querySelector('.' + activeClass);
+            activeTab.classList.remove(activeClass);
+            event.target.classList.add(activeClass);
+            let idContent = event.target.id;
+
+            this.setState(function(previousState, currentProps) {
+                return previousState.showTab = idContent;
+            });
+        };
+
+        let city = this.state.cities[this.state.index_display_city];
         return (
             <div className={css.weather_container}>
                 <div className="tabs">
-                    <div className="tab" onClick={this.showWeather}>Weather</div>
-                    <div className="tab" onClick={this.showС}>Cities</div>
-                    <div className="tab" onClick={this.showWeather}>Settings</div>
+                    <div id="weather" className={css.tab + " " + css.active} onClick={showTabContent}>Weather</div>
+                    <div id="cities" className={css.tab} onClick={showTabContent}>Cities</div>
+                    <div id="settings" className={css.tab} onClick={showTabContent}>Settings</div>
                 </div>
-                <Weather weather={this.state.weather} forecast={this.state.forecast} settings={this.state.settings}/>
+                <Weather city={city} settings={this.state.settings} showTab={this.state.showTab}/>
+                <Settings settings={this.state.settings} showTab={this.state.showTab}/>
             </div>
         )
     }

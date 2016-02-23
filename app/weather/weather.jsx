@@ -13,37 +13,27 @@ import css from './../style.styl';
 class Weather extends React.Component {
     constructor (props){
         super (props);
-
-        this.state = {
-            weather: this.props.weather,
-            settings: this.props.settings,
-            forecast: this.props.forecast
-        };
+        
     }
 
     componentDidMount (){
 
     }
 
-    componentWillReceiveProps (nextProps) {
-        this.setState({
-            weather: this.props.weather,
-            settings: this.props.settings,
-            forecast: this.props.forecast
-        });
-    }
-
     render (){
+        let classTabContent = css.weather + (this.props.showTab=='weather' ? '' : " " + css.hide_tab);
+        let today = new Date();
+        today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        let weatherToday = this.props.city.weather ? this.props.city.weather[today.getTime()]: undefined;
+
         return (
-            <div>
-                <div>
-                    <CityInfo name={this.state.weather.name} country={this.state.weather.sys.country}
-                              id={this.state.weather.id} />
-                    <GeneralInfo weather={this.state.weather.weather[0]} temperature={this.state.weather.main.temp}
-                                 settings={this.state.settings}/>
-                    <Forecast weather={this.state.forecast}/>
-                    <DetailInfo detail={this.state.weather}/>
-                </div>
+            <div className={classTabContent}>
+                <CityInfo name={this.props.city.name} country={this.props.city.country}
+                          id={this.props.city.id} />
+                <GeneralInfo weather={weatherToday} settings={this.props.settings}/>
+                <Forecast weather={this.props.city.weather}/>
+                <DetailInfo weather={weatherToday} settings={this.props.settings}/>
             </div>
         )
     }
