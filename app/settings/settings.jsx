@@ -23,29 +23,29 @@ class Settings extends React.Component{
     }
 
     render (){
-        let classTabContent = css_settings.setting + (this.props.showTab=='settings' ? '' : " " + css.hide_tab);
+        let classTabContent = css.tab_container + (this.props.settings.showTab=='settings' ? '' : " " + css.hide_tab);
         
         return (
             <div className={classTabContent}>
-                <div className={css_settings.field}>
+                <div className={css.field}>
                     <label>Поставщик</label>
                     <select>
                         <option>OpenWeatherMap</option>
                     </select>
                 </div>
-                <div className={css_settings.field}>
+                <div className={css.field}>
                     <label>Ключ</label>
                     <input type="text"/>
                 </div>
-                <div className={css_settings.field}>
+                <div className={css.field}>
                     <label>Единицы измерения</label>
                     <input type="text"/>
                 </div>
-                <div className={css_settings.field}>
+                <div className={css.field}>
                     <label>Язык данных</label>
                     <input type="text"/>
                 </div>
-                <div className={css_settings.field}>
+                <div className={css.field}>
                     <label>Единицы измерения (с примерами, потом  убрать *))</label>
                     <input type="text"/>
                 </div>

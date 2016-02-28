@@ -7,12 +7,6 @@ import React from 'react';
 import css from './../style.styl';
 
 class ForecastDay extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {};
-    }
-
     getTitle() {
         return `${this.props.weather.name} (${this.props.weather.description})`;
     }

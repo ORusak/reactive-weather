@@ -13,29 +13,51 @@ import css from './../style.styl';
 class Weather extends React.Component {
     constructor (props){
         super (props);
-        
-    }
 
-    componentDidMount (){
-
+        this.state = {
+            id_display_city: this.props.settings.id_display_city
+        }
     }
 
     render (){
-        let classTabContent = css.weather + (this.props.showTab=='weather' ? '' : " " + css.hide_tab);
+        let classTabContent = css.tab_container + (this.props.settings.showTab=='weather' ? '' : " " + css.hide_tab);
+        let city = this.props.cities[this.props.settings.id_display_city];
+
         let today = new Date();
         today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        let weatherToday = city.weather ? city.weather[today.getTime()]: undefined;
 
-        let weatherToday = this.props.city.weather ? this.props.city.weather[today.getTime()]: undefined;
+        let handlerNextCity = this.changeShowCity.bind(this, true);
+        let handlerPrevCity = this.changeShowCity.bind(this, false);
 
         return (
             <div className={classTabContent}>
-                <CityInfo name={this.props.city.name} country={this.props.city.country}
-                          id={this.props.city.id} />
+                <div className="prevCity" onClick={handlerNextCity}>+</div>
+                <div className="nextCity" onClick={handlerPrevCity}>-</div>
+                <CityInfo name={city.name} country={city.country}
+                          id={city.id} />
                 <GeneralInfo weather={weatherToday} settings={this.props.settings}/>
-                <Forecast weather={this.props.city.weather}/>
+                <Forecast weather={city.weather}/>
                 <DetailInfo weather={weatherToday} settings={this.props.settings}/>
             </div>
         )
+    }
+
+    changeShowCity (nextCity, event){
+        let keyCities = Object.keys(this.props.cities);
+        let index = keyCities.indexOf(this.props.settings.id_display_city);
+
+        if(index==-1){
+            this.setState({id_display_city: keyCities[0]});
+            return;
+        }
+
+        let indexNext = index + (nextCity?1:-1);
+
+        indexNext = indexNext<0 ? keyCities.length-1: indexNext;
+        indexNext = indexNext==keyCities.length ? 0: indexNext;
+
+        this.props.changeShowCity(keyCities[indexNext]);
     }
 }
 

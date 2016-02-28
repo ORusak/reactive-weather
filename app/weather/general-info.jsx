@@ -13,6 +13,15 @@ class GeneralInfo extends React.Component {
         super (props);
     }
 
+    getFormattedDay() {
+        let date = this.props.weather.date;
+        let formatter = new Intl.DateTimeFormat("en-US", {
+            day: "2-digit",
+            month: "short"
+        });
+        return formatter.format(date);
+    }
+
     //todo: http://cssload.net/ru/spinners
     render (){
         let temperature = this.props.weather.temperature.avr;
@@ -26,8 +35,9 @@ class GeneralInfo extends React.Component {
             <div className={css.general}>
                 <img className={css.general__icon} src={`http://openweathermap.org/img/w/${this.props.weather.icon}.png`}/>
                 <div className={css.description}>
-                    <h1>{`${this.props.weather.name} ${temperature}`} </h1>
-                    <p>{this.props.weather.description}</p>
+                    <h1>{this.props.weather.description}</h1>
+                    {temperature}
+                    <p>{this.getFormattedDay()}</p>
                 </div>
             </div>
         )

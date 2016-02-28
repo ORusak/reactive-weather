@@ -12,19 +12,12 @@ class DSOpenWeather {
             URL: 'http://api.openweathermap.org/data/2.5/',
             forecast: {
                 method: 'forecast/daily',
-                parametr: {
-                    cnt: 4
-                }
+
+                map: DSOpenWeather.mapDataForecast
             },
             weather: {
-                method: 'weather'
-            },
-            history: {
-                method: 'history/city',
-                parametr: {
-                    cnt: 1,
-                    type: 'daily'
-                }
+                method: 'weather',
+                map: DSOpenWeather.mapDataWeather
             }
         };
     }
@@ -33,30 +26,32 @@ class DSOpenWeather {
         this.key = options.key;
         this.unit = options.unit;
         this.lang = options.lang;
-        this.city = options.city;
 
         this.data;
     }
 
-    requestData (handler) {
-        this.getDataMethod ('weather', DSOpenWeather.weather, handler);
-        this.getDataMethod ('forecast', DSOpenWeather.forecast, handler, 1000);
-    }
-
-    getDataMethod (method, map, handler, time){
+    getDataMethod (options){
+        let {method, handler, timeout, param} = options;
         let ctx =   this;
-        setTimeout(() => fetch (this.getRequestAPIMethod(method))
-            .then((response) => response.json())
-            .then((data) => {
-                handler(map(data));
+        let map = DSOpenWeather.API[method].map;
+
+        setTimeout(() => fetch (this.getRequestAPIMethod(method, param))
+            .then((response) => {
+                return response.json();
             })
-            .catch((err) => {console.error(err)}), time);
+            .then((data) => {
+                if (data.cod==200) {
+                    handler(map(data));
+                }else{
+                    handler(null, data);
+                }
+            })
+            .catch((err) => {console.error(err)}), timeout);
     }
 
-    getRequestAPIMethod (methodAPI){
+    getRequestAPIMethod (methodAPI, parametr){
         let data = [];
         let weatherDataAPI = DSOpenWeather.API;
-        let parametr = weatherDataAPI[methodAPI].parametr;
         let method = weatherDataAPI[methodAPI].method;
 
         if (!method) {
@@ -69,9 +64,7 @@ class DSOpenWeather {
             return [k, parametr[k]];
         });
 
-        let city = this.city;
         let param = new Map([
-            ['id', city.id],
             ['APPID', this.key],
             ['lang', this.lang],
             ['units', this.unit]
@@ -84,7 +77,7 @@ class DSOpenWeather {
         return weatherDataAPI.URL + method + '?' +  data.join('&');
     }
 
-    static weather (data){
+    static mapDataWeather (data){
         let model = {};
         model.id = data.id;
         model.name = data.name;
@@ -99,6 +92,7 @@ class DSOpenWeather {
 
         let date = getDateWithoutTime(parseInt(data.dt)*1000);
 
+        //todo: date.getTime() change on +date
         model.weather[date.getTime()] = {
             date: date,
             mode_id: dataWeather.id,
@@ -164,7 +158,7 @@ class DSOpenWeather {
         return modelData;
     }
 
-    static forecast (data){
+    static mapDataForecast (data){
         let model = {};
 
         model.id = data.city.id;

@@ -5,7 +5,7 @@
   "main": "weather.js",
   "scripts": {
     "test": "test",
-    "start": "webpack"
+    "start": "webpack --color --diplay-modules"
   },
   "repository": {
     "type": "git",
