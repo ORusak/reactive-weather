@@ -11,6 +11,7 @@ class GeneralInfo extends React.Component {
     render (){
         let precipitationMode = this.props.weather.precipitation.mode;
         let precipitationDecryption = precipitationMode ? `(${precipitationMode})`:'';
+        let cityInfo = `${this.props.name} (${this.props.country})`;
 
         return (
             <div className={css.general}>
@@ -18,7 +19,8 @@ class GeneralInfo extends React.Component {
                 <div className={css.description}>
                     <h1>{this.props.weather.description + precipitationDecryption}</h1>
                     {this.props.weather.temperature.avr}
-                    <p>{this.props.weather.date}</p>
+                    <div>{this.props.weather.date}</div>
+                    <div>{cityInfo}</div>
                 </div>
             </div>
         )

@@ -33,6 +33,9 @@ class Cities extends React.Component {
                 return;
             }
 
+            if (!this.state.settings.API.openweathermap.key)
+                return false;
+
             dataSource.getDataMethod ({
                 method: 'weather',
                 param: {
@@ -50,6 +53,8 @@ class Cities extends React.Component {
                 },
                 timeout: 1000
             });
+
+            return true;
         };
 
         let handlerRemove = (event) => {
@@ -73,17 +78,20 @@ class Cities extends React.Component {
             )
         });
 
+        //todo: добавить вывод предупреждения если не заполнен ключ
+        //if (!this.state.settings.API.openweathermap.key)
+
         return (
             <div className={classTabContent}>
                 <div>
-                    <label>Введите название города, где интересует погода</label>
+                    <label>Enter the name of the city, where the weather is interested</label>
                     <div>
                         <input className="search" type="text" ref="city" onKeyDown={handlerClick}/>
                         <span className={css_cities.button} onClick={handlerClick}><i className="fa fa-search"></i></span>
                     </div>
                 </div>
                 <div>
-                    <label>Выбранные города</label>
+                    <label>Select cities</label>
                         <ul className={css_cities.cities}>
                             {citiesList}
                         </ul>

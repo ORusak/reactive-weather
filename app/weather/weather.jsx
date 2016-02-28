@@ -5,7 +5,6 @@
 import React from 'react';
 
 import GeneralInfo from './general-info.jsx';
-import CityInfo from './city-info.jsx';
 import DetailInfo from './detail-info.jsx';
 import Forecast from './forecast.jsx';
 import css from './../style.styl';
@@ -34,9 +33,8 @@ class Weather extends React.Component {
             <div className={classTabContent}>
                 <div className="prevCity" onClick={handlerNextCity}>+</div>
                 <div className="nextCity" onClick={handlerPrevCity}>-</div>
-                <CityInfo name={city.name} country={city.country}
-                          id={city.id} />
-                <GeneralInfo weather={weatherToday} settings={this.props.settings}/>
+                <GeneralInfo weather={weatherToday} name={city.name} country={city.country}
+                             id={city.id} settings={this.props.settings}/>
                 <Forecast weather={city.weather}/>
                 <DetailInfo weather={weatherToday}/>
             </div>

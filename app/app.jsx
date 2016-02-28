@@ -10,6 +10,7 @@ import Cities from './cities/cities.jsx';
 
 import DSOpenWeather from './lib/open-weather.js';
 import DecorateWeatherData from './lib/decorateWeatherData';
+import UnitMeasure from './lib/unit-measure';
 
 import London from './../data/weather.js';
 import Moscow from './../data/weather_moscow.js';
@@ -22,35 +23,240 @@ import Moscow from './../data/weather_moscow.js';
 
 //todo: вывод осадков
 
-const unitType = {
-    default: {
-        temperature: {
-            name: "Kelvin",
-            letter: "K"
-        },
-        wind: "m/s"
-    },
-    metric: {
-        temperature: {
-            name: "Celsius",
-            letter: "C"
-        },
-        wind: "m/s"
-    },
-    imperial: {
-        temperature: {
-            name: "Fahrenheit",
-            letter: "F"
-        },
-        wind: "mph"
-    }
-};
-
 class WeatherApp extends React.Component {
     constructor (props){
         super (props);
 
-        this.state = {
+        this.state = this.setSettingFromLocalOrDefault();
+    }
+
+    componentDidMount (){
+        this.resumeSetting();
+
+        this.updateCitiesWeatherData ();
+    }
+
+    shouldComponentUpdate (nextProps, nextState){
+        this.saveSettings (nextState);
+
+        //todo: отменять обновление при изменении единиц измерения
+        //чтобы при выборе пользователем настроек не запрашивать постоянно данные
+        //обновлять только при переключении вкладки на погодную
+
+        return true;
+    }
+
+    render (){
+        let showTabContent = (event) => {
+            let activeClass = css.active;
+            let activeTab = document.querySelector('.' + activeClass);
+            activeTab.classList.remove(activeClass);
+            event.target.classList.add(activeClass);
+            let idContent = event.target.id;
+
+            this.setState((previousState, currentProps) => {
+                previousState.settings.showTab = idContent;
+                return previousState;
+            });
+        };
+
+        let changeShowCity = (idDisplayCity) => {
+            this.setState ((previousState) => {
+                previousState.settings.id_display_city = idDisplayCity;
+                return previousState;
+            });
+        };
+
+        let changeCitiesList = (city) => {
+            this.setState ((previousState) => {
+                previousState.cities[city.id] = city;
+                return previousState;
+            });
+
+            this.updateCityWeatherData (city.id, 1000);
+        };
+
+        let updateUnitSettings = this.updateUnitSettings.bind(this);
+
+        let showTab = this.state.settings.showTab;
+        let tabs = ["weather", "cities", "settings"].map((tabName) => {
+            let classTab = css.tab  + (showTab==tabName ? " " + css.active : '');
+            return (
+                <div id={tabName} className={classTab} key={tabName} onClick={showTabContent}>{tabName}</div>
+            );
+        });
+
+        return (
+            <div className={css.weather_container}>
+                <div className="tabs">
+                    {tabs}
+                </div>
+                <Weather cities={this.state.cities} settings={this.state.settings}
+                         changeShowCity={changeShowCity}/>
+                <Settings settings={this.state.settings} updateUnitSettings={updateUnitSettings}/>
+                <Cities settings={this.state.settings} cities={this.state.cities} changeCitiesList={changeCitiesList}/>
+            </div>
+        )
+    }
+
+    updateCitiesWeatherData (){
+        //первым обновляем город выводимый по умолчанию
+        let indexDisplayCity = this.state.settings.id_display_city;
+        let citiesKey = Object.keys(this.state.cities).sort((a, b) => {
+            return a == indexDisplayCity? -1: 1;
+        });
+
+        //todo: убрать когда состояние не будет сразу обновлятся после поиска нового города
+        let timeout = 1000;
+
+        let cities = this.state.cities;
+        for (let key of citiesKey) {
+            let cityId = cities[key].id;
+            this.updateCityWeatherData (cityId, timeout);
+
+            timeout += 2000;
+        }
+    }
+
+    updateCityWeatherData (cityId, timeout){
+        if (!this.state.settings.API.openweathermap.key)
+            return false;
+
+        let dataSource = new DSOpenWeather ({
+            key: this.state.settings.API.openweathermap.key,
+            unit: this.state.settings.unit_measure,
+            lang: this.state.settings.lang
+        });
+
+        let handlerUpdateCityWeatherData = this.handlerUpdateCityWeatherData.bind(this);
+        dataSource.getDataMethod({
+            method: 'weather',
+            param: {
+                id: cityId
+            },
+            handler: handlerUpdateCityWeatherData,
+            timeout: timeout
+        });
+
+        timeout += 1000;
+
+        dataSource.getDataMethod({
+            method: 'forecast',
+            param: {
+                id: cityId,
+                cnt: 4
+            },
+            handler: handlerUpdateCityWeatherData,
+            timeout: timeout
+        });
+        return true;
+    }
+
+    handlerUpdateCityWeatherData (data, dataError){
+        if (data==null){
+            if (dataError.cod==404)
+                console.log("Город не найден");
+            else
+                console.log(data.message);
+        }
+
+        //console.log(data);
+
+        data = DecorateWeatherData.getDecorateData(data, this.state.units);
+
+        this.setState ((previousState, currentProps) => {
+            let city = previousState.cities[data.id];
+            city.name = data.name;
+            city.country = data.country;
+            city.loc = data.loc;
+
+            let cityWeather = city.weather;
+            Object.keys (data.weather).forEach((k) => {
+                cityWeather [k] = data.weather[k];
+            });
+
+            return previousState;
+        });
+    }
+
+    saveSettings (state) {
+        let localStorageSupport = 'localStorage' in window && window['localStorage'] !== null;
+
+        let localStorage = window.localStorage;
+        let settings = {};
+
+        settings.cities = Object.keys(this.state.cities).map ((key) => {
+            return key;
+        });
+        settings.settings = this.state.settings;
+
+        localStorage.weather_app = JSON.stringify(settings);
+    }
+
+    resumeSetting (){
+        let localStorage = window.localStorage;
+        let settings = localStorage.weather_app;
+        if (settings)
+            return JSON.parse(settings);
+        else
+            return null;
+    }
+
+    /**
+    * updateUnitSettings */
+    updateUnitSettings (event){
+        let unitMeasure = event.target.id;
+
+        this.setState ((previousState, currentProps) => {
+            previousState.settings.unit_measure = unitMeasure;
+
+            let unitMeasureType = UnitMeasure.type[unitMeasure];
+            Object.keys(unitMeasureType).forEach((key)=> {
+                previousState.units[key] = unitMeasureType[key];
+            });
+
+            return previousState;
+        }, () => this.updateCitiesWeatherData());
+    }
+
+    setSettingFromLocalOrDefault (){
+        let storageData = this.resumeSetting();
+        let state = {};
+
+        if (storageData){
+            //восстанавливаем блок units
+            let unitMeasure = storageData.settings.unit_measure;
+            let units = {};
+            units.temperature = UnitMeasure.type[unitMeasure].temperature;
+            units.wind = UnitMeasure.type[unitMeasure].wind;
+            units.pressure =  UnitMeasure.pressure;
+            units.precipitation =  UnitMeasure.precipitation;
+            state.units = units;
+
+            //восстанавливаем блок cities
+            let cities = {};
+            storageData.cities.forEach((idCity) => {
+                cities [idCity] = {
+                    id: idCity,
+                    weather: {}
+                }
+            });
+            state.cities = cities;
+
+            //восстанавливаем блок settings
+            let settings = storageData.settings;
+
+            //нет настроек подключения по умолчанию просим их заполнить
+            if (!settings.API.openweathermap.key)
+                settings.showTab = "settings";
+
+            state.settings = settings;
+        }else{
+
+        }
+
+        return state;
+        /*this.state = {
             units: {
                 temperature: {
                     name: "Celsius",
@@ -86,178 +292,7 @@ class WeatherApp extends React.Component {
                     weather: {}
                 }
             }
-        };
-    }
-
-    componentDidMount (){
-        this.updateCitiesWeatherData ();
-    }
-
-    shouldComponentUpdate (nextProps, nextState){
-        console.log("WeatherApp - shouldComponentUpdate");
-
-        let localStorageSupport = 'localStorage' in window && window['localStorage'] !== null
-        console.log("localStorageSupport " + localStorageSupport);
-
-        this.saveSettings (nextState);
-
-        return true;
-    }
-
-    render (){
-        let showTabContent = (event) => {
-            let activeClass = css.active;
-            let activeTab = document.querySelector('.' + activeClass);
-            activeTab.classList.remove(activeClass);
-            event.target.classList.add(activeClass);
-            let idContent = event.target.id;
-
-            this.setState((previousState, currentProps) => {
-                previousState.settings.showTab = idContent;
-                return previousState;
-            });
-
-            console.log(this.state);
-        };
-
-        let changeShowCity = (idDisplayCity) => {
-            this.setState ((previousState) => {
-                previousState.settings.id_display_city = idDisplayCity;
-                return previousState;
-            });
-        };
-
-        let changeCitiesList = (city) => {
-            this.setState ((previousState) => {
-                previousState.cities[city.id] = city;
-                return previousState;
-            });
-
-            this.updateCityWeatherData (city.id, 1000);
-        };
-
-
-        return (
-            <div className={css.weather_container}>
-                <div className="tabs">
-                    <div id="weather" className={css.tab  + " " + css.active} onClick={showTabContent}>Weather</div>
-                    <div id="cities" className={css.tab} onClick={showTabContent}>Cities</div>
-                    <div id="settings" className={css.tab} onClick={showTabContent}>Settings</div>
-                </div>
-                <Weather cities={this.state.cities} settings={this.state.settings}
-                         changeShowCity={changeShowCity}/>
-                <Settings settings={this.state.settings}/>
-                <Cities settings={this.state.settings} cities={this.state.cities} changeCitiesList={changeCitiesList}/>
-            </div>
-        )
-    }
-
-    updateCitiesWeatherData (){
-        //первым обновляем город выводимый по умолчанию
-        let indexDisplayCity = this.state.settings.id_display_city;
-        let citiesKey = Object.keys(this.state.cities).sort((a, b) => {
-            return a == indexDisplayCity? -1: 1;
-        });
-
-        //todo: убрать когда состояние не будет сразу обновлятся после поиска нового города
-        let timeout = 1000;
-
-        let cities = this.state.cities;
-        for (let key of citiesKey) {
-            console.log((indexDisplayCity==key? '*':'') + 'get data' + key);
-
-            let cityId = cities[key].id;
-            this.updateCityWeatherData (cityId, timeout);
-
-            timeout += 2000;
-        }
-    }
-
-    updateCityWeatherData (cityId, timeout){
-        let dataSource = new DSOpenWeather ({
-            key: this.state.settings.API.openweathermap.key,
-            unit: this.state.settings.unit_measure,
-            lang: this.state.settings.lang
-        });
-
-        let handlerUpdateCityWeatherData = this.handlerUpdateCityWeatherData.bind(this);
-        dataSource.getDataMethod({
-            method: 'weather',
-            param: {
-                id: cityId
-            },
-            handler: handlerUpdateCityWeatherData,
-            timeout: timeout
-        });
-
-        timeout += 1000;
-
-        dataSource.getDataMethod({
-            method: 'forecast',
-            param: {
-                id: cityId,
-                cnt: 4
-            },
-            handler: handlerUpdateCityWeatherData,
-            timeout: timeout
-        });
-    }
-
-    handlerUpdateCityWeatherData (data, dataError){
-        console.log("WeatherApp - handlerUpdateCityWeatherData");
-
-        if (data==null){
-            if (dataError.cod==404)
-                console.log("Город не найден");
-            else
-                console.log(data.message);
-        }
-
-        console.log("WeatherApp - handlerUpdateCityWeatherData - receive data");
-        console.log(data);
-
-        data = DecorateWeatherData.getDecorateData(data, this.state.units);
-
-        console.log("WeatherApp - handlerUpdateCityWeatherData - DecorateWeatherData");
-        console.log(data);
-
-        this.setState ((previousState, currentProps) => {
-            let cityWeather = previousState.cities[data.id].weather;
-
-            Object.keys (data.weather).forEach((k) => {
-                cityWeather [k] = data.weather[k];
-            });
-
-            return previousState;
-        });
-    }
-
-    saveSettings (state) {
-        console.log("WeatherApp - saveSettings");
-
-        let localStorage = window.localStorage;
-
-        localStorage.cities = Object.keys(this.state).map ((key) => {
-            return key;
-        });
-
-        localStorage.settings = state.settings;
-
-        console.log(localStorage);
-    }
-
-    resumeSetting (){
-
-    }
-
-    updateUnitSettings (){
-        console.log("WeatherApp - updateUnitSettings");
-
-        this.setState ((previousState, currentProps) => {
-            Object.assign(previousState.units, unitType[this.state.settings.unit_measure]);
-
-            return previousState;
-        });
+        };*/
     }
 }
 
