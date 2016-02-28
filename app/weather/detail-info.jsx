@@ -3,7 +3,6 @@
  */
 
 import React from 'react';
-import windrose from 'windrose';
 
 import css from './../style.styl';
 import Parametr from './parametr-info.jsx';
@@ -14,39 +13,16 @@ class DetailInfo extends React.Component {
     render (){
         let settings = this.props.settings;
 
-        let pressure = Math.round(parseFloat(this.props.weather.pressure.avr)) +
-                settings.units.pressure;
-
-        let humidity = this.props.weather.humidity + '%'
-
-        let sunrise = getFormattedDate(this.props.weather.sun.rise, {
-            hour: "2-digit",
-            minute: "2-digit"
-        });
-        let sunset = getFormattedDate(this.props.weather.sun.set, {
-            hour: "2-digit",
-            minute: "2-digit"
-        });
-
-        let cloudiness = this.props.weather.clouds.value + '%';
-
-        let windSpeed = this.props.weather.wind.speed;
-        let windDirection;
-        if (windSpeed != '-') {
-            windSpeed = Math.round(parseFloat(this.props.weather.wind.speed)) +
-                settings.units.type[settings.unit_measure].wind;
-            windDirection = windrose.getPoint (parseFloat(this.props.weather.wind.deg), {depth: 0}).symbol;
-        }
-        let windDescription = `${windSpeed}, ${windDirection}`;
+        let windDescription = `${this.props.weather.wind.speed}, ${this.props.weather.wind.direction}`;
 
         return (
             <div className={css.detail}>
-                <Parametr name="Pressure" value={pressure}/>
-                <Parametr name="Humidity" value={humidity}/>
-                <Parametr name="Wind" value={windDescription}/>
-                <Parametr name="Clouds" value={cloudiness}/>
-                <Parametr name="Sunrise" value={sunrise}/>
-                <Parametr name="Sunset" value={sunset}/>
+                <Parametr name="Pressure" key="Pressure" value={this.props.weather.pressure.avr}/>
+                <Parametr name="Humidity" key="Humidity" value={this.props.weather.humidity}/>
+                <Parametr name="Wind" key="Wind" value={windDescription}/>
+                <Parametr name="Clouds" key="Clouds" value={this.props.weather.clouds.value}/>
+                <Parametr name="Sunrise" key="Sunrise" value={this.props.weather.sun.rise}/>
+                <Parametr name="Sunset" key="Sunset" value={this.props.weather.sun.set}/>
             </div>
         )
     }
@@ -58,7 +34,8 @@ DetailInfo.defaultProps = {
             avr: '-'
         },
         wind: {
-            speed: '-'
+            speed: '-',
+            direction: '-'
         },
         clouds: {
             value: '-'
@@ -70,19 +47,5 @@ DetailInfo.defaultProps = {
     },
     settings: {}
 };
-
-/**
- * getDateWithoutTime
- * @param string|Date представление даты
- * @return Date дата с нулевым временем
- * */
-function getFormattedDate(date, option) {
-    if (date && date!='-') {
-        let formatter = new Intl.DateTimeFormat("en-US", option);
-        return formatter.format(date);
-    }
-
-    return '';
-}
 
 export default DetailInfo;

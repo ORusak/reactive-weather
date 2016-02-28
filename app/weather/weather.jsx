@@ -38,7 +38,7 @@ class Weather extends React.Component {
                           id={city.id} />
                 <GeneralInfo weather={weatherToday} settings={this.props.settings}/>
                 <Forecast weather={city.weather}/>
-                <DetailInfo weather={weatherToday} settings={this.props.settings}/>
+                <DetailInfo weather={weatherToday}/>
             </div>
         )
     }

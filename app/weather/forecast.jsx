@@ -8,17 +8,6 @@ import css from './../style.styl';
 import ForecastDay from './forecast-day.jsx';
 
 class Forecast extends React.Component {
-    constructor (props){
-        super (props);
-
-        this.state = {
-        };
-    }
-
-    componentDidMount (){
-
-    }
-
     render (){
         let forecastDay = [];
         Object.keys(this.props.weather).sort().forEach((key) => {

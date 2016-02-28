@@ -129,16 +129,8 @@ class DSOpenWeather {
         let modelData = {};
         for (let p in data){
             if (p == 'snow' || p == 'rain' || p == 'no'){
-                let precipitation = precipitation_data[p];
                 modelData.mode = p;
-
-                for (let k in precipitation){
-                    modelData.range = k;
-                    modelData.value = precipitation[k];
-
-                    //считаем что больше одного значения временного периода прийти не может
-                    break;
-                }
+                modelData.value = data[p];
             }
         }
 
@@ -200,7 +192,7 @@ class DSOpenWeather {
                     ground_level: null
                 },
                 humidity: dataDayWeather.humidity,
-                precipitation: DSOpenWeather.getPrecipitation (data),
+                precipitation: DSOpenWeather.getPrecipitation (dataDayWeather),
                 clouds: {
                     value: dataDayWeather.clouds
                 },

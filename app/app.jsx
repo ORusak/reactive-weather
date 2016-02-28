@@ -9,6 +9,7 @@ import Settings from './settings/settings.jsx';
 import Cities from './cities/cities.jsx';
 
 import DSOpenWeather from './lib/open-weather.js';
+import DecorateWeatherData from './lib/decorateWeatherData';
 
 import London from './../data/weather.js';
 import Moscow from './../data/weather_moscow.js';
@@ -19,39 +20,48 @@ import Moscow from './../data/weather_moscow.js';
 
 //todo: специальный город текущее местоположение
 
+//todo: вывод осадков
+
+const unitType = {
+    default: {
+        temperature: {
+            name: "Kelvin",
+            letter: "K"
+        },
+        wind: "m/s"
+    },
+    metric: {
+        temperature: {
+            name: "Celsius",
+            letter: "C"
+        },
+        wind: "m/s"
+    },
+    imperial: {
+        temperature: {
+            name: "Fahrenheit",
+            letter: "F"
+        },
+        wind: "mph"
+    }
+};
+
 class WeatherApp extends React.Component {
     constructor (props){
         super (props);
 
         this.state = {
+            units: {
+                temperature: {
+                    name: "Celsius",
+                    letter: "С"
+                },
+                wind: "m/s",
+                pressure: "hPa",
+                precipitation: "mm"
+            },
             settings: {
                 unit_measure: "metric",
-                units: {
-                    type: {
-                        default: {
-                            temperature: {
-                                name: "Kelvin",
-                                letter: "K"
-                            },
-                            wind: "m/s"
-                        },
-                        metric: {
-                            temperature: {
-                                name: "Celsius",
-                                letter: "C"
-                            },
-                            wind: "m/s"
-                        },
-                        imperial: {
-                            temperature: {
-                                name: "Fahrenheit",
-                                letter: "F"
-                            },
-                            wind: "mph"
-                        }
-                    },
-                    pressure: "hPa"
-                },
                 lang: 'en',
                 API: {
                     openweathermap: {
@@ -66,7 +76,7 @@ class WeatherApp extends React.Component {
                 519690: {
                     id: "519690",
                     name: "Saint-Peterburg",
-                    country: "ru",
+                    country: "RU",
                     weather: {}
                 },
                 2643743: {
@@ -81,6 +91,17 @@ class WeatherApp extends React.Component {
 
     componentDidMount (){
         this.updateCitiesWeatherData ();
+    }
+
+    shouldComponentUpdate (nextProps, nextState){
+        console.log("WeatherApp - shouldComponentUpdate");
+
+        let localStorageSupport = 'localStorage' in window && window['localStorage'] !== null
+        console.log("localStorageSupport " + localStorageSupport);
+
+        this.saveSettings (nextState);
+
+        return true;
     }
 
     render (){
@@ -112,7 +133,7 @@ class WeatherApp extends React.Component {
                 return previousState;
             });
 
-            this.updateCitiesWeatherData ();
+            this.updateCityWeatherData (city.id, 1000);
         };
 
 
@@ -183,6 +204,8 @@ class WeatherApp extends React.Component {
     }
 
     handlerUpdateCityWeatherData (data, dataError){
+        console.log("WeatherApp - handlerUpdateCityWeatherData");
+
         if (data==null){
             if (dataError.cod==404)
                 console.log("Город не найден");
@@ -190,12 +213,48 @@ class WeatherApp extends React.Component {
                 console.log(data.message);
         }
 
+        console.log("WeatherApp - handlerUpdateCityWeatherData - receive data");
+        console.log(data);
+
+        data = DecorateWeatherData.getDecorateData(data, this.state.units);
+
+        console.log("WeatherApp - handlerUpdateCityWeatherData - DecorateWeatherData");
+        console.log(data);
+
         this.setState ((previousState, currentProps) => {
             let cityWeather = previousState.cities[data.id].weather;
 
             Object.keys (data.weather).forEach((k) => {
                 cityWeather [k] = data.weather[k];
             });
+
+            return previousState;
+        });
+    }
+
+    saveSettings (state) {
+        console.log("WeatherApp - saveSettings");
+
+        let localStorage = window.localStorage;
+
+        localStorage.cities = Object.keys(this.state).map ((key) => {
+            return key;
+        });
+
+        localStorage.settings = state.settings;
+
+        console.log(localStorage);
+    }
+
+    resumeSetting (){
+
+    }
+
+    updateUnitSettings (){
+        console.log("WeatherApp - updateUnitSettings");
+
+        this.setState ((previousState, currentProps) => {
+            Object.assign(previousState.units, unitType[this.state.settings.unit_measure]);
 
             return previousState;
         });

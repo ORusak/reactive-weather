@@ -8,31 +8,20 @@ import css from './../style.styl';
 
 class ForecastDay extends React.Component {
     getTitle() {
-        return `${this.props.weather.name} (${this.props.weather.description})`;
-    }
-
-    getFormattedDay() {
-        let date = this.props.weather.date;
-        let formatter = new Intl.DateTimeFormat("en-US", {
-            day: "2-digit",
-            month: "short"
-        });
-        return formatter.format(date);
+        let precipitationMode = this.props.weather.precipitation.mode;
+        let precipitationDecryption = precipitationMode ? `(${precipitationMode})`:'';
+        return `${this.props.weather.description}${precipitationDecryption}`;
     }
 
     render() {
-        let day = this.getFormattedDay();
         let title = this.getTitle();
-
-        let tmin = `${Math.round(parseFloat(this.props.weather.temperature.min))}${String.fromCharCode(176)}`;
-        let tmax = `${Math.round(parseFloat(this.props.weather.temperature.max))}${String.fromCharCode(176)}`;
 
         return (
             <div className={css.forecast_day}>
-                <div>{day}</div>
+                <div>{this.props.weather.date}</div>
                 <img alt={title} title={title}
                      src={`http://openweathermap.org/img/w/${this.props.weather.icon}.png`}/>
-                <div>{tmin} / {tmax}</div>
+                <div>{this.props.weather.temperature.min}/{this.props.weather.temperature.max}</div>
             </div>
         )
     }
