@@ -7,7 +7,7 @@ import React from 'react';
 import css from './../style.styl';
 import css_settings from './settings.styl';
 
-import UnitMeasure from './../lib/unit-measure';
+import {UnitMeasure, Languages} from './../lib/unit-measure';
 
 const DEGREE_CHAR_CODE = 176;
 const DEGREE_CHAR = String.fromCharCode(DEGREE_CHAR_CODE);
@@ -15,33 +15,15 @@ const DEGREE_CHAR = String.fromCharCode(DEGREE_CHAR_CODE);
 class Settings extends React.Component{
     constructor (props){
         super (props);
-
-
-        /*
-        * English - en, Russian - ru, Italian - it, Spanish - es (or sp), Ukrainian - uk (or ua),
-        * German - de, Portuguese - pt, Romanian - ro, Polish - pl, Finnish - fi, Dutch - nl,
-        * French - fr, Bulgarian - bg, Swedish - sv (or se), Chinese Traditional - zh_tw,
-        * Chinese Simplified - zh (or zh_cn), Turkish - tr, Croatian - hr, Catalan - ca */
-    }
-
-    componentDidMount (){
-
     }
 
     render (){
         let classTabContent = css.tab_container + (this.props.settings.showTab=='settings' ? '' : " " + css.hide_tab);
-
+        let updateSettings = this.props.updateSettings;
         let currentUnitMeasure = this.props.settings.unit_measure;
-        let measure = Object.keys(UnitMeasure.type).map ((unitTypeId) => {
-            let unitType = UnitMeasure.type [unitTypeId];
-            let checked = currentUnitMeasure==unitTypeId ? "defaultChecked":'';
-            return (
-                <div key={unitTypeId}>
-                    <input type="radio" id={unitTypeId} name="unitMeasure" ref="unitMeasure"
-                           value={unitTypeId} checked={checked} onChange={this.props.updateUnitSettings}/>
-                    <label htmlFor={unitTypeId}>{unitTypeId}</label>
-                </div>
-            );
+
+        let listUnits = Object.keys(UnitMeasure.type).map((key) => {
+            return {name: key, value: key};
         });
 
         return (
@@ -49,7 +31,7 @@ class Settings extends React.Component{
                 <div className={css.field}>
                     <label>Data Source</label>
                     <div>
-                        <input type="radio" id="OpenWeatherMap" name="dataSource" ref="dataSource" value="OpenWeatherMap"
+                        <input type="radio" id="OpenWeatherMap" name="dataSource" value="OpenWeatherMap"
                                defaultChecked readOnly/>
                         <label htmlFor="OpenWeatherMap">OpenWeatherMap</label>
                     </div>
@@ -57,20 +39,19 @@ class Settings extends React.Component{
                 <div className={css.field}>
                     <label>API Key (<a href="http://openweathermap.org/appid">get key</a>)</label>
                     <div>
-                        <textarea ref="keyApi" defaultValue={this.props.settings.API.openweathermap.key}/>
+                        <textarea name="keyApi" defaultValue={this.props.settings.API.openweathermap.key}
+                                  onChange={updateSettings}/>
                     </div>
                 </div>
                 <div className={css.field}>
                     <label>Data receive languages</label>
-                    <div>
-                        <input type="radio" id="OpenWeatherMap" name="dataSource" ref="dataSource" value="OpenWeatherMap"
-                               defaultChecked readOnly/>
-                        <label htmlFor="OpenWeatherMap">OpenWeatherMap</label>
-                    </div>
+                    <SelectElement name="languages" list={Languages} current={this.props.settings.lang}
+                                  updateSettings={updateSettings}/>
                 </div>
                 <div className={css.field}>
                     <label>Unit measure</label>
-                    {measure}
+                    <RadioElement name="unitMeasure" list={listUnits} current={currentUnitMeasure}
+                                  updateSettings={updateSettings}/>
                 </div>
                 <UnitExample unitType={this.props.settings.unit_measure}/>
             </div>
@@ -91,6 +72,40 @@ let UnitExample = (props) => {
             <div>Precipitation: {UnitMeasure.precipitation_example}{UnitMeasure.precipitation}</div>
         </div>
     );
-}
+};
+
+let RadioElement = (props) => {
+    let collection = props.list.map (elem => {
+        let id = elem.value;
+        let name = elem.name;
+        return (
+            <div key={id}>
+                <input type="radio" id={id} name={props.name}
+                       value={id} checked={props.current==id} onChange={props.updateSettings}/>
+                <label htmlFor={id}>{name}</label>
+            </div>
+        );
+    });
+
+    return (
+        <div>{collection}</div>
+    );
+};
+
+let SelectElement = (props) => {
+    let collection = props.list.map (elem => {
+        let id = elem.value;
+        let name = elem.name;
+        return (
+            <option key={id} value={id}>{name}</option>
+        );
+    });
+
+    return (
+        <div>
+            <select name={props.name} onChange={props.updateSettings} defaultValue={props.current}>{collection}</select>
+        </div>
+    );
+};
 
 export default Settings;

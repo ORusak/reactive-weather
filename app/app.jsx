@@ -10,7 +10,7 @@ import Cities from './cities/cities.jsx';
 
 import DSOpenWeather from './lib/open-weather.js';
 import DecorateWeatherData from './lib/decorateWeatherData';
-import UnitMeasure from './lib/unit-measure';
+import {UnitMeasure} from './lib/unit-measure';
 
 import London from './../data/weather.js';
 import Moscow from './../data/weather_moscow.js';
@@ -76,7 +76,7 @@ class WeatherApp extends React.Component {
             this.updateCityWeatherData (city.id, 1000);
         };
 
-        let updateUnitSettings = this.updateUnitSettings.bind(this);
+        let updateSettings = this.updateSettings.bind(this);
 
         let showTab = this.state.settings.showTab;
         let tabs = ["weather", "cities", "settings"].map((tabName) => {
@@ -93,7 +93,7 @@ class WeatherApp extends React.Component {
                 </div>
                 <Weather cities={this.state.cities} settings={this.state.settings}
                          changeShowCity={changeShowCity}/>
-                <Settings settings={this.state.settings} updateUnitSettings={updateUnitSettings}/>
+                <Settings settings={this.state.settings} updateSettings={updateSettings}/>
                 <Cities settings={this.state.settings} cities={this.state.cities} changeCitiesList={changeCitiesList}/>
             </div>
         )
@@ -203,17 +203,30 @@ class WeatherApp extends React.Component {
     }
 
     /**
-    * updateUnitSettings */
-    updateUnitSettings (event){
-        let unitMeasure = event.target.id;
+    * updateSettings */
+    updateSettings (event){
+        let nameChangeElement = event.target.name;
+        let valueChangeElement = event.target.value;
 
         this.setState ((previousState, currentProps) => {
-            previousState.settings.unit_measure = unitMeasure;
+            if (nameChangeElement == "keyApi"){
+                previousState.settings.API.openweathermap.key = valueChangeElement;
+            }
 
-            let unitMeasureType = UnitMeasure.type[unitMeasure];
-            Object.keys(unitMeasureType).forEach((key)=> {
-                previousState.units[key] = unitMeasureType[key];
-            });
+            if (nameChangeElement == "languages") {
+                previousState.settings.lang = valueChangeElement;
+            }
+
+            if (nameChangeElement == "unitMeasure") {
+                let unitMeasure = valueChangeElement;
+
+                previousState.settings.unit_measure = unitMeasure;
+
+                let unitMeasureType = UnitMeasure.type[unitMeasure];
+                Object.keys(unitMeasureType).forEach((key)=> {
+                    previousState.units[key] = unitMeasureType[key];
+                });
+            }
 
             return previousState;
         }, () => this.updateCitiesWeatherData());

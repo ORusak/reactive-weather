@@ -34,4 +34,25 @@ let UnitMeasure = {
     precipitation_example: 4
 };
 
-export default UnitMeasure;
+let Languages = [
+    {name: "English", value: "en"}, {name: "Russian", value: "ru"}, {name: "Italian", value: "it"}, {
+        name: "Spanish",
+        value: "sp"
+    }, {name: "Ukrainian", value: "ua"}, {name: "German", value: "de"},
+    {name: "Portuguese", value: "pt"}, {name: "Romanian", value: "ro"}, {name: "Polish", value: "pl"}, {
+        name: "Finnish",
+        value: "fi"
+    }, {name: "Dutch", value: "nl"},
+    {name: "French", value: "fr"}, {name: "Bulgarian", value: "bg"}, {
+        name: "Swedish",
+        value: "se"
+    }, {name: "Chinese Traditional", value: "zh_tw"},
+    {name: "Chinese Simplified", value: "zh_cn"}, {name: "Turkish", value: "tr"}, {
+        name: "Croatian",
+        value: "hr"
+    }, {name: "Catalan", value: "ca"}
+];
+
+export {UnitMeasure};
+
+export {Languages};

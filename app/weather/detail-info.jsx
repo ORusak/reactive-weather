@@ -13,7 +13,8 @@ class DetailInfo extends React.Component {
     render (){
         let settings = this.props.settings;
 
-        let windDescription = `${this.props.weather.wind.speed}, ${this.props.weather.wind.direction}`;
+        let windDescription = this.props.weather.wind.speed;
+        windDescription += this.props.weather.wind.direction ? ', ' + this.props.weather.wind.direction:'';
 
         return (
             <div className={css.detail}>

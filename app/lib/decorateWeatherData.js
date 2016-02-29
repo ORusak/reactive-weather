@@ -36,8 +36,10 @@ class DecorateWeatherData {
             weather.clouds.value = weather.clouds.value + '%';
 
             weather.wind.speed = Math.round(parseFloat(weather.wind.speed)) + units.wind;
-            weather.wind.direction = windrose.getPoint (parseFloat(weather.wind.deg), {depth: 0}).symbol;
-            weather.wind.deg = weather.wind.deg + DEGREE_CHAR;
+            if (weather.wind.deg) {
+                weather.wind.direction = windrose.getPoint(parseFloat(weather.wind.deg), {depth: 0}).symbol;
+                weather.wind.deg = weather.wind.deg + DEGREE_CHAR;
+            }
 
             weather.sun.rise = DecorateWeatherData.getFormattedDate(weather.sun.rise, {
                 hour: "2-digit",
