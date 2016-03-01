@@ -12,9 +12,6 @@ import DSOpenWeather from './lib/open-weather.js';
 import DecorateWeatherData from './lib/decorateWeatherData';
 import {UnitMeasure} from './lib/unit-measure';
 
-import London from './../data/weather.js';
-import Moscow from './../data/weather_moscow.js';
-
 //todo: ленивую подгрузку остальных табов, webpack hot reload
 
 //todo: поддержку мультиязычности
@@ -27,7 +24,39 @@ class WeatherApp extends React.Component {
     constructor (props){
         super (props);
 
-        this.state = this.setSettingFromLocalOrDefault();
+        let stateStruct = {
+            units: {
+                temperature: {
+                    name: "",
+                    letter: ""
+                },
+                wind: "",
+                pressure: "",
+                precipitation: ""
+            },
+            settings: {
+                unit_measure: "",
+                lang: '',
+                API: {
+                    openweathermap: {
+                        key: ''
+                    }
+                },
+                showTab: "",
+                id_display_city: ""
+            },
+
+            cities: {
+                "0": {
+                    id: "0",
+                    name: "",
+                    country: "",
+                    weather: {}
+                }
+            }
+        };
+
+        this.state = this.setSettingFromLocalOrDefault(stateStruct);
     }
 
     componentDidMount (){
@@ -265,7 +294,18 @@ class WeatherApp extends React.Component {
 
             state.settings = settings;
         }else{
+            //восстанавливаем блок units
+            let unitMeasure = "metric";
+            let units = {};
+            units.temperature = UnitMeasure.type[unitMeasure].temperature;
+            units.wind = UnitMeasure.type[unitMeasure].wind;
+            units.pressure =  UnitMeasure.pressure;
+            units.precipitation =  UnitMeasure.precipitation;
+            state.units = units;
 
+            state.cities = {};
+
+            state.settings = {showTab: "settings"};
         }
 
         return state;
