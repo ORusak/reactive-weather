@@ -27,12 +27,12 @@ class Cities extends React.Component {
                 updateDate: ''
             }
         };
+    }
 
-        this.dataSource = new DSOpenWeather({
-            key: this.props.settings.API.openweathermap.key,
-            unit: this.props.settings.unit_measure,
-            lang: this.props.settings.lang
-        });
+    componentWillReceiveProps (){
+        console.log("componentWillReceiveProps ");
+
+        this.updateGeolocation();
     }
 
     componentDidMount (){
@@ -40,70 +40,6 @@ class Cities extends React.Component {
 
         //todo: добавить вывод карты по координатам?
 
-        if ("geolocation" in navigator) {
-            //console.log("geolocation is available");
-
-            let geo_success = (position) => {
-                if (!this.props.settings.API.openweathermap.key)
-                    return false;
-
-                if (this.state.point.loc.lat==Math.round(position.coords.latitude) &&
-                    this.state.point.loc.lon==Math.round(position.coords.longitude)){
-                    return false;
-                }
-
-                this.dataSource.getDataMethod ({
-                    method: 'weather',
-                    param: {
-                        lon: position.coords.longitude,
-                        lat: position.coords.latitude
-                    },
-                    handler: (data, dataError) => {
-                        if (data==null){
-                            if (dataError.cod==404)
-                                console.log("Город не найден");
-                            else
-                                console.log(dataError.message);
-                        }else{
-                            this.props.changeCitiesList(data.id);
-
-                            this.setState ((previousState, currentProps) => {
-                                let point = previousState.point;
-                                point.id = data.id;
-                                point.name= data.name;
-                                point.country = data.country;
-                                point.loc.lat = Math.round(position.coords.latitude);
-                                point.loc.lon = Math.round(position.coords.longitude);
-                                point.updateDate = new Date();
-
-                                return previousState;
-                            });
-                        }
-                    },
-                    timeout: 1000
-                });
-            };
-
-            let geo_error = () => {
-                //console.log("Sorry, no position available.");
-            };
-
-            var geo_options = {
-                enableHighAccuracy: false,
-                maximumAge        : 30000,
-                timeout           : 10
-            };
-
-            let watchID = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);
-            this.setState ((previousState, currentProps) => {
-                let point = previousState.point;
-                point.watchID = watchID;
-
-                return previousState;
-            });
-        } else {
-            //console.log("geolocation IS NOT available");
-        }
     }
 
     componentWillUnmount (){
@@ -122,7 +58,13 @@ class Cities extends React.Component {
             if (!this.props.settings.API.openweathermap.key)
                 return false;
 
-            this.dataSource.getDataMethod ({
+            let dataSource = new DSOpenWeather({
+                key: this.props.settings.API.openweathermap.key,
+                unit: this.props.settings.unit_measure,
+                lang: this.props.settings.lang
+            });
+
+            dataSource.getDataMethod ({
                 method: 'weather',
                 param: {
                     q: this.refs.city.value
@@ -180,7 +122,7 @@ class Cities extends React.Component {
                             Latitude {this.state.point.loc.lat} Longitude {this.state.point.loc.lon}
                         </div>
                         <div>
-                            Update date {updateDate}
+                            Update {updateDate}
                         </div>
                     </div>
                 </div>
@@ -202,7 +144,80 @@ class Cities extends React.Component {
             </div>
         )
     }
-};
+
+    updateGeolocation (){
+        if ("geolocation" in navigator) {
+            console.log("geolocation is available");
+
+            if (!this.props.settings.API.openweathermap.key)
+                return false;
+
+            let geo_success = (position) => {
+                if (this.state.point.loc.lat==Math.round(position.coords.latitude) &&
+                    this.state.point.loc.lon==Math.round(position.coords.longitude)){
+                    return false;
+                }
+
+                let dataSource = new DSOpenWeather({
+                    key: this.props.settings.API.openweathermap.key,
+                    unit: this.props.settings.unit_measure,
+                    lang: this.props.settings.lang
+                });
+
+                dataSource.getDataMethod ({
+                    method: 'weather',
+                    param: {
+                        lon: position.coords.longitude,
+                        lat: position.coords.latitude
+                    },
+                    handler: (data, dataError) => {
+                        if (data==null){
+                            if (dataError.cod==404)
+                                console.log("Город не найден");
+                            else
+                                console.log(dataError.message);
+                        }else{
+                            this.props.changeCitiesList(data.id);
+
+                            this.setState ((previousState, currentProps) => {
+                                let point = previousState.point;
+                                point.id = data.id;
+                                point.name= data.name;
+                                point.country = data.country;
+                                point.loc.lat = Math.round(position.coords.latitude);
+                                point.loc.lon = Math.round(position.coords.longitude);
+                                point.updateDate = new Date();
+
+                                return previousState;
+                            });
+                        }
+                    },
+                    timeout: 1000
+                });
+            };
+
+            let geo_error = () => {
+                console.log("Sorry, no position available.");
+            };
+
+            var geo_options = {
+                enableHighAccuracy: false
+            };
+
+            console.log("geolocation");
+
+            let watchID = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);
+            this.setState ((previousState, currentProps) => {
+                let point = previousState.point;
+                point.watchID = watchID;
+
+                return previousState;
+            });
+        } else {
+            console.log("geolocation IS NOT available");
+        }
+    }
+}
 
 /*, Saint Barts  light intensity shower rain
 24.6°С  temperature from 24 to 25°С, wind 4.1m/s. clouds 75%, 1017 hpa
@@ -211,7 +226,7 @@ Geo coords [ -62.8498, 17.8978 ]*/
 
 //todo: добавить посик по текущему местонахождению
 
-//todo: добавить вывод результата поиска
+//todo: добавить вывод результата поиска и подтверждение добавления в список
 let SearchResult = (props) => {
     let city = props.city;
     let weather = city.weather;
