@@ -164,7 +164,9 @@ class DSOpenWeather {
         model.weather = {};
 
         let today = getDateWithoutTime(new Date());
-        let millsToday = today.getTime()
+        //console.log(today.getTimezoneOffset() / 60);
+
+        let millsToday = today.getTime();
 
         for (let dataDayWeather of data.list){
 

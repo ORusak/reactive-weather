@@ -35,7 +35,7 @@ class WeatherApp extends React.Component {
                 precipitation: ""
             },
             settings: {
-                unit_measure: "",
+                unit_measure: "metric",
                 lang: '',
                 API: {
                     openweathermap: {
@@ -47,12 +47,6 @@ class WeatherApp extends React.Component {
             },
 
             cities: {
-                "0": {
-                    id: "0",
-                    name: "",
-                    country: "",
-                    weather: {}
-                }
             }
         };
 
@@ -65,23 +59,15 @@ class WeatherApp extends React.Component {
         this.updateCitiesWeatherData ();
     }
 
-    shouldComponentUpdate (nextProps, nextState){
-        this.saveSettings (nextState);
-
-        //todo: отменять обновление при изменении единиц измерения
-        //чтобы при выборе пользователем настроек не запрашивать постоянно данные
-        //обновлять только при переключении вкладки на погодную
-
-        return true;
-    }
-
     render (){
         let showTabContent = (event) => {
             let activeClass = css.active;
             let activeTab = document.querySelector('.' + activeClass);
             activeTab.classList.remove(activeClass);
-            event.target.classList.add(activeClass);
-            let idContent = event.target.id;
+
+            let tab = event.currentTarget;
+            tab.classList.add(activeClass);
+            let idContent = tab.id;
 
             this.setState((previousState, currentProps) => {
                 previousState.settings.showTab = idContent;
@@ -96,28 +82,56 @@ class WeatherApp extends React.Component {
             });
         };
 
-        let changeCitiesList = (city) => {
+        let changeCitiesList = (cityId, removeCityId) => {
             this.setState ((previousState) => {
-                previousState.cities[city.id] = city;
-                return previousState;
-            });
+                if (cityId) {
+                    previousState.cities[cityId] = {id: cityId};
+                }else{
+                    delete previousState.cities[removeCityId];
 
-            this.updateCityWeatherData (city.id, 1000);
+                    //обновляем указатель на выводимый город
+                    if (this.state.settings.id_display_city==removeCityId){
+                        //берем первый в списке или пустой
+                        previousState.settings.id_display_city = Object.keys(this.state.cities)[0];
+                    }
+                }
+
+                return previousState;
+            }, () => {
+                if (cityId) {
+                    this.updateCityWeatherData(cityId, 1000);
+                }
+                this.saveSettings ();
+            });
         };
 
         let updateSettings = this.updateSettings.bind(this);
 
         let showTab = this.state.settings.showTab;
-        let tabs = ["weather", "cities", "settings"].map((tabName) => {
-            let classTab = css.tab  + (showTab==tabName ? " " + css.active : '');
+        let tabs = [{
+            name: "weather",
+            icon: "fa-sun-o"
+        }, {
+            name: "cities",
+            icon: "fa-map-marker"
+        }, {
+            name: "settings",
+            icon: "fa-cogs"
+        }].map((tab) => {
+            let classTab = css.tab  + (showTab==tab.name ? " " + css.active : '');
+            classTab += (tab.name=="cities" ? " " + css.tab_cities:"");
+
+            let classIcon = "fa " + tab.icon;
             return (
-                <div id={tabName} className={classTab} key={tabName} onClick={showTabContent}>{tabName}</div>
+                <div id={tab.name} className={classTab} key={tab.name} onClick={showTabContent}>
+                    <i className={classIcon}></i>{tab.name}
+                </div>
             );
         });
 
         return (
             <div className={css.weather_container}>
-                <div className="tabs">
+                <div className={css.tabs}>
                     {tabs}
                 </div>
                 <Weather cities={this.state.cities} settings={this.state.settings}
@@ -131,13 +145,14 @@ class WeatherApp extends React.Component {
     updateCitiesWeatherData (){
         //первым обновляем город выводимый по умолчанию
         let indexDisplayCity = this.state.settings.id_display_city;
-        let citiesKey = Object.keys(this.state.cities).sort((a, b) => {
+        let citiesKey = Object.keys(this.state.cities);
+
+        citiesKey.sort((a, b) => {
             return a == indexDisplayCity? -1: 1;
         });
 
         //todo: убрать когда состояние не будет сразу обновлятся после поиска нового города
         let timeout = 1000;
-
         let cities = this.state.cities;
         for (let key of citiesKey) {
             let cityId = cities[key].id;
@@ -150,6 +165,14 @@ class WeatherApp extends React.Component {
     updateCityWeatherData (cityId, timeout){
         if (!this.state.settings.API.openweathermap.key)
             return false;
+
+        //если выводимый город не задан, берем первый обновляемый
+        if (!this.state.settings.id_display_city) {
+            this.setState((previousState) => {
+                previousState.settings.id_display_city = cityId;
+                return previousState
+            });
+        }
 
         let dataSource = new DSOpenWeather ({
             key: this.state.settings.API.openweathermap.key,
@@ -199,16 +222,18 @@ class WeatherApp extends React.Component {
             city.country = data.country;
             city.loc = data.loc;
 
-            let cityWeather = city.weather;
+            if (!city.weather)
+                city.weather = {};
+
             Object.keys (data.weather).forEach((k) => {
-                cityWeather [k] = data.weather[k];
+                city.weather [k] = data.weather[k];
             });
 
             return previousState;
         });
     }
 
-    saveSettings (state) {
+    saveSettings () {
         let localStorageSupport = 'localStorage' in window && window['localStorage'] !== null;
 
         let localStorage = window.localStorage;
@@ -258,12 +283,14 @@ class WeatherApp extends React.Component {
             }
 
             return previousState;
-        }, () => this.updateCitiesWeatherData());
+        }, () => {
+            this.saveSettings ();
+            this.updateCitiesWeatherData();
+        });
     }
 
-    setSettingFromLocalOrDefault (){
+    setSettingFromLocalOrDefault (stateDefault){
         let storageData = this.resumeSetting();
-        let state = {};
 
         if (storageData){
             //восстанавливаем блок units
@@ -273,7 +300,13 @@ class WeatherApp extends React.Component {
             units.wind = UnitMeasure.type[unitMeasure].wind;
             units.pressure =  UnitMeasure.pressure;
             units.precipitation =  UnitMeasure.precipitation;
-            state.units = units;
+            stateDefault.units = units;
+
+            //восстанавливаем блок settings
+            let settings = storageData.settings;
+
+
+            stateDefault.settings = settings;
 
             //восстанавливаем блок cities
             let cities = {};
@@ -283,16 +316,17 @@ class WeatherApp extends React.Component {
                     weather: {}
                 }
             });
-            state.cities = cities;
+            stateDefault.cities = cities;
 
-            //восстанавливаем блок settings
-            let settings = storageData.settings;
+            settings.showTab = "weather";
+            //нет городов просим заполнить
+            if (Object.keys(cities).length==0)
+                settings.showTab = "cities";
 
             //нет настроек подключения по умолчанию просим их заполнить
             if (!settings.API.openweathermap.key)
                 settings.showTab = "settings";
 
-            state.settings = settings;
         }else{
             //восстанавливаем блок units
             let unitMeasure = "metric";
@@ -301,51 +335,14 @@ class WeatherApp extends React.Component {
             units.wind = UnitMeasure.type[unitMeasure].wind;
             units.pressure =  UnitMeasure.pressure;
             units.precipitation =  UnitMeasure.precipitation;
-            state.units = units;
+            stateDefault.units = units;
 
-            state.cities = {};
+            stateDefault.cities = {};
 
-            state.settings = {showTab: "settings"};
+            stateDefault.settings.showTab = "settings";
         }
 
-        return state;
-        /*this.state = {
-            units: {
-                temperature: {
-                    name: "Celsius",
-                    letter: "С"
-                },
-                wind: "m/s",
-                pressure: "hPa",
-                precipitation: "mm"
-            },
-            settings: {
-                unit_measure: "metric",
-                lang: 'en',
-                API: {
-                    openweathermap: {
-                        key: '7aaf25e81ae02f237ad79998501b8fe0'
-                    }
-                },
-                showTab: "weather",
-                id_display_city: "519690"
-            },
-
-            cities: {
-                519690: {
-                    id: "519690",
-                    name: "Saint-Peterburg",
-                    country: "RU",
-                    weather: {}
-                },
-                2643743: {
-                    id: "2643743",
-                    name: "London",
-                    country: "GB",
-                    weather: {}
-                }
-            }
-        };*/
+        return stateDefault;
     }
 }
 

@@ -7,25 +7,111 @@ import css_cities from './cities.styl';
 
 import DSOpenWeather from './../lib/open-weather.js';
 
+import DecorateWeatherData from './../lib/decorateWeatherData';
+
 const KEY_CODE_ENTER = 13;
 
 class Cities extends React.Component {
     constructor (props){
         super (props);
-    }
 
-    componentDidMount() {
-        this.refs.city.focus();
-    }
+        this.state = {
+            point: {
+                name: 'City?',
+                country: 'Country?',
+                loc: {
+                    lat: '?',
+                    lon: '?'
+                },
+                watchID: '',
+                updateDate: ''
+            }
+        };
 
-    render() {
-        let classTabContent = css.tab_container + (this.props.settings.showTab == 'cities' ? '' : " " + css.hide_tab);
-
-        let dataSource = new DSOpenWeather({
+        this.dataSource = new DSOpenWeather({
             key: this.props.settings.API.openweathermap.key,
             unit: this.props.settings.unit_measure,
             lang: this.props.settings.lang
         });
+    }
+
+    componentDidMount (){
+        //todo: добавить вывод сообщений при остутствии поддержки геолокации
+
+        //todo: добавить вывод карты по координатам?
+
+        if ("geolocation" in navigator) {
+            //console.log("geolocation is available");
+
+            let geo_success = (position) => {
+                if (!this.props.settings.API.openweathermap.key)
+                    return false;
+
+                if (this.state.point.loc.lat==Math.round(position.coords.latitude) &&
+                    this.state.point.loc.lon==Math.round(position.coords.longitude)){
+                    return false;
+                }
+
+                this.dataSource.getDataMethod ({
+                    method: 'weather',
+                    param: {
+                        lon: position.coords.longitude,
+                        lat: position.coords.latitude
+                    },
+                    handler: (data, dataError) => {
+                        if (data==null){
+                            if (dataError.cod==404)
+                                console.log("Город не найден");
+                            else
+                                console.log(dataError.message);
+                        }else{
+                            this.props.changeCitiesList(data.id);
+
+                            this.setState ((previousState, currentProps) => {
+                                let point = previousState.point;
+                                point.id = data.id;
+                                point.name= data.name;
+                                point.country = data.country;
+                                point.loc.lat = Math.round(position.coords.latitude);
+                                point.loc.lon = Math.round(position.coords.longitude);
+                                point.updateDate = new Date();
+
+                                return previousState;
+                            });
+                        }
+                    },
+                    timeout: 1000
+                });
+            };
+
+            let geo_error = () => {
+                //console.log("Sorry, no position available.");
+            };
+
+            var geo_options = {
+                enableHighAccuracy: false,
+                maximumAge        : 30000,
+                timeout           : 10
+            };
+
+            let watchID = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);
+            this.setState ((previousState, currentProps) => {
+                let point = previousState.point;
+                point.watchID = watchID;
+
+                return previousState;
+            });
+        } else {
+            //console.log("geolocation IS NOT available");
+        }
+    }
+
+    componentWillUnmount (){
+        navigator.geolocation.clearWatch(this.state.watchID);
+    }
+
+    render() {
+        let classTabContent = css.tab_container + (this.props.settings.showTab == 'cities' ? '' : " " + css.hide_tab);
 
         let handlerClick = (event) => {
             if (event.type=='keydown' && event.nativeEvent.keyCode!=KEY_CODE_ENTER){
@@ -33,10 +119,10 @@ class Cities extends React.Component {
                 return;
             }
 
-            if (!this.state.settings.API.openweathermap.key)
+            if (!this.props.settings.API.openweathermap.key)
                 return false;
 
-            dataSource.getDataMethod ({
+            this.dataSource.getDataMethod ({
                 method: 'weather',
                 param: {
                     q: this.refs.city.value
@@ -46,9 +132,9 @@ class Cities extends React.Component {
                         if (dataError.cod==404)
                             console.log("Город не найден");
                         else
-                            console.log(data.message);
+                            console.log(dataError.message);
                     }else{
-                        this.props.changeCitiesList(data);
+                        this.props.changeCitiesList(data.id);
                     }
                 },
                 timeout: 1000
@@ -58,11 +144,7 @@ class Cities extends React.Component {
         };
 
         let handlerRemove = (event) => {
-            let cityId = event.currentTarget.parentNode.id;
-            this.setState((previousState, currentProps) => {
-                delete previousState[cityId];
-                return previousState;
-            });
+            this.props.changeCitiesList(null, event.currentTarget.parentNode.id);
         };
 
         let saveCities = this.props.cities;
@@ -72,10 +154,15 @@ class Cities extends React.Component {
 
             return (
                 <li className={css_cities.city} id={cityId} key={cityId}>
-                    <div className={css_cities.city_name}>{cityDescription}</div>
+                    <div className={css_cities.city__name}>{cityDescription}</div>
                     <span className={css_cities.button} onClick={handlerRemove}><i className="fa fa-times"></i></span>
                 </li>
             )
+        });
+
+        let updateDate = DecorateWeatherData.getFormattedDate(this.state.point.updateDate, {
+            hour: "2-digit",
+            minute: "2-digit"
         });
 
         //todo: добавить вывод предупреждения если не заполнен ключ
@@ -83,18 +170,34 @@ class Cities extends React.Component {
 
         return (
             <div className={classTabContent}>
-                <div>
-                    <label>Enter the name of the city, where the weather is interested</label>
-                    <div>
-                        <input className="search" type="text" ref="city" onKeyDown={handlerClick}/>
-                        <span className={css_cities.button} onClick={handlerClick}><i className="fa fa-search"></i></span>
+                <div className={css.field}>
+                    <label className={css.field__label}>Weather from current position</label>
+                    <div className={css.field__control}>
+                        <div>
+                            {`${this.state.point.name} (${this.state.point.country})`}
+                        </div>
+                        <div>
+                            Latitude {this.state.point.loc.lat} Longitude {this.state.point.loc.lon}
+                        </div>
+                        <div>
+                            Update date {updateDate}
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <label>Select cities</label>
+                <div className={css.field}>
+                    <label className={css.field__label}>Enter the name of the city, where the weather is interested</label>
+                    <div className={css.field__control}>
+                        <input className={css_cities.search} type="text" ref="city" onKeyDown={handlerClick}/>
+                        <span className={css_cities.button + " " + css_cities.search__button} onClick={handlerClick}><i className="fa fa-search"></i></span>
+                    </div>
+                </div>
+                <div className={css.field}>
+                    <label className={css.field__label}>Selected cities</label>
+                    <div className={css.field__control}>
                         <ul className={css_cities.cities}>
                             {citiesList}
                         </ul>
+                    </div>
                 </div>
             </div>
         )

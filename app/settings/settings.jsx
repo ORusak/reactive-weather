@@ -29,31 +29,40 @@ class Settings extends React.Component{
         return (
             <div className={classTabContent}>
                 <div className={css.field}>
-                    <label>Data Source</label>
-                    <div>
+                    <label className={css.field__label}>Data Source</label>
+                    <div className={css.field__control}>
                         <input type="radio" id="OpenWeatherMap" name="dataSource" value="OpenWeatherMap"
                                defaultChecked readOnly/>
                         <label htmlFor="OpenWeatherMap">OpenWeatherMap</label>
                     </div>
                 </div>
                 <div className={css.field}>
-                    <label>API Key (<a href="http://openweathermap.org/appid">get key</a>)</label>
-                    <div>
-                        <textarea name="keyApi" defaultValue={this.props.settings.API.openweathermap.key}
+                    <label className={css.field__label}>API Key (<a href="http://openweathermap.org/appid">get key</a>)</label>
+                    <div className={css.field__control}>
+                        <textarea className={css_settings.control__textarea} name="keyApi" defaultValue={this.props.settings.API.openweathermap.key}
                                   onChange={updateSettings}/>
                     </div>
                 </div>
                 <div className={css.field}>
-                    <label>Data receive languages</label>
-                    <SelectElement name="languages" list={Languages} current={this.props.settings.lang}
+                    <label className={css.field__label}>Data receive languages</label>
+                    <div className={css.field__control}>
+                        <SelectElement name="languages" list={Languages} current={this.props.settings.lang}
                                   updateSettings={updateSettings}/>
+                    </div>
                 </div>
                 <div className={css.field}>
-                    <label>Unit measure</label>
-                    <RadioElement name="unitMeasure" list={listUnits} current={currentUnitMeasure}
+                    <label className={css.field__label}>Unit measure</label>
+                    <div className={css.field__control}>
+                        <RadioElement name="unitMeasure" list={listUnits} current={currentUnitMeasure}
                                   updateSettings={updateSettings}/>
+                    </div>
                 </div>
-                <UnitExample unitType={this.props.settings.unit_measure}/>
+                <div className={css.field}>
+                    <label className={css.field__label}>Units look like</label>
+                    <div className={css.field__control}>
+                        <UnitExample unitType={this.props.settings.unit_measure}/>
+                    </div>
+                </div>
             </div>
         )
     }
@@ -65,7 +74,6 @@ let UnitExample = (props) => {
 
     return (
         <div className={css_settings.unit_example}>
-            <label>Look like</label>
             <div>Temperature: {measure.temperature.example+DEGREE_CHAR}{measure.temperature.letter}({measure.temperature.name})</div>
             <div>Wind: {measure.wind_example}{measure.wind}, S(South)</div>
             <div>Pressure: {UnitMeasure.pressure_example}{UnitMeasure.pressure}</div>
@@ -102,9 +110,7 @@ let SelectElement = (props) => {
     });
 
     return (
-        <div>
-            <select name={props.name} onChange={props.updateSettings} defaultValue={props.current}>{collection}</select>
-        </div>
+        <select className={css_settings.control__select} name={props.name} onChange={props.updateSettings} defaultValue={props.current}>{collection}</select>
     );
 };
 
