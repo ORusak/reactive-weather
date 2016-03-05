@@ -2,10 +2,13 @@
  * Created by Rusak Oleg on 09.02.2016.
  */
 
-import React from 'react';
-
 import cssWeather from './weather.styl';
 
+/**
+ * Component display city today detail weather data
+ * @exports DetailInfo
+ * @author Oleg Rusak
+ * */
 class DetailInfo extends React.Component {
     //todo: Current UV Index
     //http://openweathermap.org/api_uv
@@ -53,6 +56,11 @@ DetailInfo.defaultProps = {
     settings: {}
 };
 
+/**
+ * Stateless component display city today one parameter weather data
+ * @exports Parametr
+ * @author Oleg Rusak
+ * */
 let Parametr = (props) => {
     return (
         <div className={cssWeather.parametr}>

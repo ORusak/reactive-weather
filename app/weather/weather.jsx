@@ -2,8 +2,6 @@
  * Created by Rusak Oleg on 09.02.2016.
  */
 
-import React from 'react';
-
 import GeneralInfo from './general-info.jsx';
 import DetailInfo from './detail-info.jsx';
 import Forecast from './forecast.jsx';
@@ -11,8 +9,12 @@ import Forecast from './forecast.jsx';
 import css from './../style.styl';
 import cssWeather from './weather.styl';
 
+/**
+ * Component display data weather city
+ * @exports Weather
+ * @author Oleg Rusak
+ * */
 class Weather extends React.Component {
-
     render (){
         let classTabContent = css.tab_container + (this.props.settings.showTab=='weather' ? '' : " " + css.hide_tab);
         let city = this.props.cities[this.props.settings.id_display_city];
@@ -26,7 +28,7 @@ class Weather extends React.Component {
             city = {};
         }
 
-        let changeShowCity = this.changeShowCity.bind(this);
+        let changeShowCity = this.handlerChangeShowCity.bind(this);
 
         return (
             <div className={classTabContent}>
@@ -38,7 +40,12 @@ class Weather extends React.Component {
         )
     }
 
-    changeShowCity (nextCity, event){
+    /**
+     * handler event change display city
+     * @protected
+     * @param {boolean} nextCity - mark direction bypass list cities. true - next, false - prev
+     */
+    handlerChangeShowCity (nextCity){
         let keyCities = Object.keys(this.props.cities);
         let index = keyCities.indexOf(this.props.settings.id_display_city);
 
@@ -50,14 +57,5 @@ class Weather extends React.Component {
         this.props.changeShowCity(keyCities[indexNext]);
     }
 }
-
-Weather.defaultProps = {
-    cities: {
-
-    },
-    settings: {
-
-    }
-};
 
 export default Weather;

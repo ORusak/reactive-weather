@@ -2,10 +2,13 @@
  * Created by Rusak Oleg on 09.02.2016.
  */
 
-import React from 'react';
-
 import cssWeather from './weather.styl';
 
+/**
+ * Component display forecast data weather city
+ * @exports Forecast
+ * @author Oleg Rusak
+ * */
 class Forecast extends React.Component {
     render (){
         let forecastDay = [];
@@ -20,11 +23,11 @@ class Forecast extends React.Component {
     }
 }
 
-Forecast.defaultProps = {
-    weather: {
-    }
-};
-
+/**
+ * Stateless component display forecast day data weather city
+ * @exports ForecastDay
+ * @author Oleg Rusak
+ * */
 let ForecastDay = (props) => {
     let precipitationMode = props.weather.precipitation.mode;
     let precipitationDecryption = precipitationMode ? `(${precipitationMode})`:'';

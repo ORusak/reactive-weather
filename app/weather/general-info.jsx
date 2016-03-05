@@ -2,10 +2,13 @@
  * Created by Rusak Oleg on 10.02.2016.
  */
 
-import React from 'react';
-
 import cssWeather from './weather.styl';
 
+/**
+ * Component display city today general weather data
+ * @exports GeneralInfo
+ * @author Oleg Rusak
+ * */
 class GeneralInfo extends React.Component {
     //todo: http://cssload.net/ru/spinners
     render (){
@@ -36,6 +39,11 @@ class GeneralInfo extends React.Component {
         )
     }
 
+    /**
+     * handler event change display city. invoke parent handler
+     * @protected
+     * @param {boolean} nextCity - mark direction bypass list cities. true - next, false - prev
+     */
     changeShowCity (nextCity){
         this.props.changeShowCity(nextCity);
     }

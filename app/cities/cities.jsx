@@ -6,15 +6,20 @@ import css from './../style.styl';
 import css_cities from './cities.styl';
 
 import DSOpenWeather from './../lib/open-weather.js';
-
 import DecorateWeatherData from './../lib/decorateWeatherData';
 
 const KEY_CODE_ENTER = 13;
 
+/**
+ * Component control list cities
+ * @exports Cities
+ * @author Oleg Rusak
+ * */
 class Cities extends React.Component {
     constructor (props){
         super (props);
 
+        //state city find geo location
         this.state = {
             point: {
                 name: 'City?',
@@ -33,22 +38,19 @@ class Cities extends React.Component {
         this.updateGeolocation();
     }
 
-    componentDidMount (){
-        //todo: добавить вывод сообщений при остутствии поддержки геолокации
-
-        //todo: добавить вывод карты по координатам?
-
-    }
-
     componentWillUnmount (){
         navigator.geolocation.clearWatch(this.state.watchID);
     }
 
     render() {
+        //todo: добавить вывод сообщений при остутствии поддержки геолокации
+        //todo: добавить вывод предупреждения если не заполнен ключ
+        //if (!this.state.settings.API.openweathermap.key)
+        //todo: добавить вывод карты по координатам?
+
         let classTabContent = css.tab_container + (this.props.settings.showTab == 'cities' ? '' : " " + css.hide_tab);
 
         let handlerClick = this.handlerFindCityByName.bind(this);
-
         let handlerRemove = (event) => {
             this.props.changeCitiesList(event.currentTarget.parentNode.id, true);
         };
@@ -70,9 +72,6 @@ class Cities extends React.Component {
             hour: "2-digit",
             minute: "2-digit"
         });
-
-        //todo: добавить вывод предупреждения если не заполнен ключ
-        //if (!this.state.settings.API.openweathermap.key)
 
         return (
             <div className={classTabContent}>
@@ -109,6 +108,12 @@ class Cities extends React.Component {
         )
     }
 
+    /**
+     * handler event find city by name. invoke parent handler update state.
+     * @protected
+     * @param {object} event - React event
+     * @return {boolean} - mark successful find city
+     */
     async handlerFindCityByName (event){
         if (event.type=='keydown' && event.nativeEvent.keyCode!=KEY_CODE_ENTER){
             event.stopPropagation();
@@ -134,6 +139,10 @@ class Cities extends React.Component {
         return true;
     }
 
+    /**
+     * find city by coord current geolocation. register watchPosition to update geolocation data.
+     * @protected
+     */
     updateGeolocation (){
         if ("geolocation" in navigator) {
             //console.log("geolocation is available");
@@ -155,23 +164,26 @@ class Cities extends React.Component {
             };
 
             var geo_options = {
-                enableHighAccuracy: false
+                enableHighAccuracy: false,
+                maximumAge        : 30000,
+                timeout           : 15000
             };
 
-            //console.log("geolocation");
-
             let watchID = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);
-            this.setState ((previousState) => {
-                let point = previousState.point;
-                point.watchID = watchID;
 
-                return previousState;
-            });
+            let point = Object.assign({}, this.state.point);
+            point.watchID = watchID;
+            this.setState ({point: point});
         } else {
-            //console.log("geolocation IS NOT available");
+            console.log("geolocation IS NOT available");
         }
     }
 
+    /**
+     * update city weather data by geo coord. invoke parent handler update city state.
+     * @protected
+     * @param {object} position - React event
+     */
     async updateCityDataByPosition (position){
         let data = await this.findCity ({
             lon: position.coords.longitude,
@@ -184,23 +196,27 @@ class Cities extends React.Component {
         if (data.code==200){
             this.props.changeCitiesList(data.id, false);
 
-            this.setState ((previousState, currentProps) => {
-                let point = previousState.point;
-                point.id = data.id;
-                point.name= data.name;
-                point.country = data.country;
-                point.loc.lat = Math.round(position.coords.latitude);
-                point.loc.lon = Math.round(position.coords.longitude);
-                point.updateDate = new Date();
+            let point = Object.assign({}, this.state.point);
+            point.id = data.id;
+            point.name= data.name;
+            point.country = data.country;
+            point.loc.lat = Math.round(position.coords.latitude);
+            point.loc.lon = Math.round(position.coords.longitude);
+            point.updateDate = new Date();
 
-                return previousState;
-            });
+            this.setState ({point: point});
         }else{
             console.log(data.code==404 ? "Город не найден" : data.message);
         }
     }
 
-    async findCity (options, units){
+    /**
+     * update city weather data by geo coord. invoke parent handler update city state.
+     * @protected
+     * @param {object} options - method parameter request in API
+     * @return {object} - weather data from API
+     */
+    async findCity (options){
         let dataSource = new DSOpenWeather ();
         let data = await dataSource.getDataMethod({
             method: 'weather',
@@ -211,15 +227,18 @@ class Cities extends React.Component {
     }
 }
 
-/*, Saint Barts  light intensity shower rain
-24.6°С  temperature from 24 to 25°С, wind 4.1m/s. clouds 75%, 1017 hpa
-
-Geo coords [ -62.8498, 17.8978 ]*/
-
-//todo: добавить посик по текущему местонахождению
 
 //todo: добавить вывод результата поиска и подтверждение добавления в список
+/**
+ * (draft) Stateless component display find data city before confirm user
+ * @exports Cities
+ * @author Oleg Rusak
+ * */
 let SearchResult = (props) => {
+    /*, Saint Barts  light intensity shower rain
+     24.6°С  temperature from 24 to 25°С, wind 4.1m/s. clouds 75%, 1017 hpa
+     Geo coords [ -62.8498, 17.8978 ]*/
+
     let city = props.city;
     let weather = city.weather;
     return (

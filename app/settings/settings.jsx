@@ -2,8 +2,6 @@
  * Created by Rusak Oleg on 15.02.2016.
  */
 
-import React from 'react';
-
 import css from './../style.styl';
 import css_settings from './settings.styl';
 
@@ -12,6 +10,11 @@ import {UnitMeasure, Languages} from './../lib/unit-measure';
 const DEGREE_CHAR_CODE = 176;
 const DEGREE_CHAR = String.fromCharCode(DEGREE_CHAR_CODE);
 
+/**
+ * Component display app settings
+ * @exports Settings
+ * @author Oleg Rusak
+ * */
 class Settings extends React.Component{
     render (){
         let classTabContent = css.tab_container + (this.props.settings.showTab=='settings' ? '' : " " + css.hide_tab);
@@ -78,6 +81,11 @@ let UnitExample = (props) => {
     );
 };
 
+/**
+ * Stateless component display element collection radio button
+ * @exports RadioElement
+ * @author Oleg Rusak
+ * */
 let RadioElement = (props) => {
     let collection = props.list.map (elem => {
         let id = elem.value;
@@ -96,6 +104,11 @@ let RadioElement = (props) => {
     );
 };
 
+/**
+ * Stateless component display element select
+ * @exports SelectElement
+ * @author Oleg Rusak
+ * */
 let SelectElement = (props) => {
     let collection = props.list.map (elem => {
         let id = elem.value;
