@@ -6,7 +6,18 @@ import windrose from 'windrose';
 const DEGREE_CHAR_CODE = 176;
 const DEGREE_CHAR = String.fromCharCode(DEGREE_CHAR_CODE);
 
+/**
+ * Decorate app state to display format
+ * @exports DecorateWeatherData
+ * @author Oleg Rusak
+ * */
 class DecorateWeatherData {
+    /**
+     * Decorate data request method API
+     * @static
+     * @param {object} data - app state data
+     * @param {object} units - use units in app
+     * @return {object} - decorate data */
     static getDecorateData (data, units){
         data.loc.lon = data.loc.lon + DEGREE_CHAR;
         data.loc.lat = data.loc.lat + DEGREE_CHAR;
@@ -56,10 +67,11 @@ class DecorateWeatherData {
     }
 
     /**
-     * getFormattedDate
-     * @param string|Date представление даты
-     * @option object настройки формата
-     * @return string форматированное представление даты
+     * formatted date with Intl.DateTimeFormat
+     * @static
+     * @param {string|Date} date - date
+     * @param {object} option - option formatted Intl.DateTimeFormat
+     * @return string - formatted data
      * */
     static getFormattedDate(date, option) {
         if (date && date!='-') {
@@ -70,6 +82,12 @@ class DecorateWeatherData {
         return '';
     }
 
+    /**
+     * Formatted temperature value
+     * @static
+     * @param {number} temperature - temperature value
+     * @param {object} units - use units in app
+     * @return {stirng} - formatted temperature */
     static getFormattedTemperature(temperature, units) {
         let unit = units ? units.temperature.letter : '';
         return `${Math.round(parseFloat(temperature))}${DEGREE_CHAR}${unit}`;

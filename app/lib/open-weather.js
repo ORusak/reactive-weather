@@ -2,11 +2,24 @@
  * Created by Rusak Oleg on 22.02.2016.
  */
 
+/**
+ * Interface receive data from openweathermap
+ * @exports DSOpenWeather
+ * @author Oleg Rusak
+ * */
 class DSOpenWeather {
+    /**
+     * Return supported name source data API
+     * @static
+     * @return {string} - name source data API*/
     static get nameAPI (){
         return "openweathermap";
     }
 
+    /**
+     * Return description supported method API
+     * @static
+     * @return {object} - description supported method API*/
     static get API (){
         return  {
             URL: 'http://api.openweathermap.org/data/2.5/',
@@ -22,10 +35,11 @@ class DSOpenWeather {
         };
     }
 
-    constructor (options){
-        this.data;
-    }
-
+    /**
+     * return data request method API
+     * @public
+     * @param {object} options - name method, param method
+     * @return {object} - method weather data*/
     async getDataMethod (options){
         let {method, param} = options;
         let ctx =   this;
@@ -41,7 +55,13 @@ class DSOpenWeather {
             .catch((err) => {console.error(err)});
     }
 
-    getRequestAPIMethod (methodAPI, parametr){
+    /**
+     * return URL request method API
+     * @public
+     * @param {string} methodAPI - name method
+     * @param {object} parameter - parameters method
+     * @return {string} - URL request*/
+    getRequestAPIMethod (methodAPI, parameter){
         let weatherDataAPI = DSOpenWeather.API;
         let method = weatherDataAPI[methodAPI].method;
 
@@ -49,15 +69,20 @@ class DSOpenWeather {
             throw new Error(`Not support method [${methodAPI}]`);
         }
 
-        parametr = parametr ? parametr : {};
+        parameter = parameter ? parameter : {};
 
-        let data = Object.keys(parametr).map((k, index, array) => {
-            return k + "=" + parametr[k];
+        let data = Object.keys(parameter).map((k, index, array) => {
+            return k + "=" + parameter[k];
         });
 
         return weatherDataAPI.URL + method + '?' +  data.join('&');
     }
 
+    /**
+     * map data method "weather" API to app state
+     * @static
+     * @param {object} data - data method API
+     * @return {object} - data formatted to app state*/
     static mapDataWeather (data){
         let model = {};
         model.id = data.id;
@@ -107,6 +132,11 @@ class DSOpenWeather {
         return model;
     }
 
+    /**
+     * Precipitation data to format app state
+     * @static
+     * @param {object} data - data method API
+     * @return {object} - data precipitation formatted to app state*/
     static getPrecipitation (data){
         let modelData = {};
         for (let p in data){
@@ -119,6 +149,11 @@ class DSOpenWeather {
         return modelData;
     }
 
+    /**
+     * Cloud data to format app state
+     * @static
+     * @param {object} cloudData - data part method API for cloud
+     * @return {object} - data cloud formatted to app state*/
     static getCloud (cloudData){
         let modelData = {};
         for (let k in cloudData){
@@ -132,6 +167,11 @@ class DSOpenWeather {
         return modelData;
     }
 
+    /**
+     * map data method "forecast" API to app state
+     * @static
+     * @param {object} data - data method API
+     * @return {object} - data formatted to app state*/
     static mapDataForecast (data){
         let model = {};
 
@@ -196,7 +236,7 @@ class DSOpenWeather {
 }
 
 /**
- * getDateWithoutTime
+ * round date without time
  * @param string|Date представление даты
  * @return Date дата с нулевым временем
  * */
@@ -205,6 +245,11 @@ function getDateWithoutTime (d){
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+/**
+ * set timeout request to API
+ * @param {number} ms - delay timeout
+ * @param {object} promise - promise what you want to run with a delay
+*/
 function timeout(ms, promise) {
     return new Promise(function(resolve, reject) {
         setTimeout(()=> {

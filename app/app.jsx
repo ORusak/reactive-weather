@@ -65,8 +65,6 @@ class WeatherApp extends React.Component {
     }
 
     async componentDidMount (){
-        console.log('componentDidMount');
-
         let cities = await this.updateCitiesWeatherData (this.state);
         this.setState({cities: cities});
     }
@@ -76,8 +74,6 @@ class WeatherApp extends React.Component {
         let changeCitiesList = this.handlerChangeCitiesList.bind(this);
 
         let updateSettings = this.handlerUpdateSettings.bind(this);
-
-        console.log('render');
 
         return (
             <div className={css.weather_container}>
@@ -138,8 +134,6 @@ class WeatherApp extends React.Component {
         });
 
         //todo: убрать когда состояние не будет сразу обновлятся после поиска нового города
-        //let timeout = 1000;
-        let timeout = 0;
         for (let key of citiesKey) {
             let cityId = cities[key].id;
             let cityData = await this.updateCityWeatherData ({
@@ -150,8 +144,6 @@ class WeatherApp extends React.Component {
 
             }, prevState.units);
             cities[cityId] = cityData;
-
-            timeout += 2000;
         }
 
         return cities;
