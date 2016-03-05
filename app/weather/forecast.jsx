@@ -23,6 +23,10 @@ class Forecast extends React.Component {
     }
 }
 
+Forecast.defaultProps = {
+    weather: {}
+};
+
 /**
  * Stateless component display forecast day data weather city
  * @exports ForecastDay
