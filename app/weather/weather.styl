@@ -52,6 +52,19 @@
 :local(.description__city)
   display block
 
+@media screen and (orientation: landscape) and (max-width: 550px)
+  :local(.description)
+    width 50%
+    font-size 10pt
+    vertical-align text-bottom
+
+  :local(.general__icon)
+    width 50%
+    height 50%
+
+  :local(.description__temp)
+    font-size 150%
+
 :local(.forecast)
   font-size 70%
   margin-bottom 10px
@@ -60,6 +73,7 @@
 :local(.forecast_day)
   float: left
   width: 25%
+  text-align center
 
 :local(.forecast_day__date)
 :local(.forecast_day__temp)

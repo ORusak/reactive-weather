@@ -186,10 +186,12 @@ class DSOpenWeather {
 
         model.weather = {};
 
+        //todo: bug with timezone offset
+        //at 00:00 data not display. required create date with offset API
         let today = getDateWithoutTime(new Date());
         //console.log(today.getTimezoneOffset() / 60);
 
-        let millsToday = today.getTime();
+        let millsToday = +today;
 
         for (let dataDayWeather of data.list){
 

@@ -1,18 +1,32 @@
-
 :local(.weather_container)
-  width 250px
-  margin 100px auto
+  margin 50px auto
+  font-size 20pt
+  width 500px
+
   padding 10px
   text-align left
   font-family "Helvetica Neue", Helvetica, Arial, sans-serif
-  border-width: 0 3px 3px 3px
+  border-width: 3px
+  border-radius 3px
   border-style double
   border-color black
   overflow hidden
 
+@media screen and (max-width: 550px)
+  :local(.weather_container)
+    width auto
+    margin 5px 0px
+
+@media screen and (max-width: 400px)
+  :local(.weather_container)
+    font-size 13pt
+
 :local(.tab_container)
-  font-size 13pt
   clear left
+
+:local(.tabs)
+  width 100%
+  overflow hidden
 
 :local(.tab)
   float left
