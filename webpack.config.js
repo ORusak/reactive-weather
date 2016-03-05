@@ -11,7 +11,7 @@ const LANG = process.env.LANG || "ru";
 //проблема добавляет все возможности в файл
 
 module.exports = {
-    entry: "./app/main.jsx",
+    entry: ['babel-polyfill',"./app/main.jsx"],
     output: {
         path: __dirname + "/public",
         filename: "weather.js"

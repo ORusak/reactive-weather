@@ -20,9 +20,20 @@ import {UnitMeasure} from './lib/unit-measure';
 
 //todo: вывод осадков
 
+/**
+ * Component general logic weather app
+ * @exports WeatherApp
+ * @author Oleg Rusak
+ * */
 class WeatherApp extends React.Component {
     constructor (props){
         super (props);
+
+        this.tabsStruct = [
+            {name: "weather",icon: "fa-sun-o"},
+            {name: "cities",icon: "fa-map-marker"},
+            {name: "settings",icon: "fa-cogs"}
+        ];
 
         let stateStruct = {
             units: {
@@ -53,71 +64,43 @@ class WeatherApp extends React.Component {
         this.state = this.setSettingFromLocalOrDefault(stateStruct);
     }
 
-    componentDidMount (){
-        this.resumeSetting();
+    async componentDidMount (){
+        console.log('componentDidMount');
 
-        this.updateCitiesWeatherData ();
+        let cities = await this.updateCitiesWeatherData (this.state);
+        this.setState({cities: cities});
     }
 
     render (){
-        let showTabContent = (event) => {
-            let activeClass = css.active;
-            let activeTab = document.querySelector('.' + activeClass);
-            activeTab.classList.remove(activeClass);
+        let changeShowCity = this.handlerChangeShowCity.bind(this);
+        let changeCitiesList = this.handlerChangeCitiesList.bind(this);
 
-            let tab = event.currentTarget;
-            tab.classList.add(activeClass);
-            let idContent = tab.id;
+        let updateSettings = this.handlerUpdateSettings.bind(this);
 
-            this.setState((previousState, currentProps) => {
-                previousState.settings.showTab = idContent;
-                return previousState;
-            });
-        };
+        console.log('render');
 
-        let changeShowCity = (idDisplayCity) => {
-            this.setState ((previousState) => {
-                previousState.settings.id_display_city = idDisplayCity;
-                return previousState;
-            });
-        };
+        return (
+            <div className={css.weather_container}>
+                <div className={css.tabs}>
+                    {this.getElementTabs()}
+                </div>
+                <Weather cities={this.state.cities} settings={this.state.settings}
+                         changeShowCity={changeShowCity}/>
+                <Settings settings={this.state.settings} updateSettings={updateSettings}/>
+                <Cities settings={this.state.settings} cities={this.state.cities} changeCitiesList={changeCitiesList}/>
+            </div>
+        )
+    }
 
-        let changeCitiesList = (cityId, removeCityId) => {
-            this.setState ((previousState) => {
-                if (cityId) {
-                    previousState.cities[cityId] = {id: cityId};
-                }else{
-                    delete previousState.cities[removeCityId];
-
-                    //обновляем указатель на выводимый город
-                    if (this.state.settings.id_display_city==removeCityId){
-                        //берем первый в списке или пустой
-                        previousState.settings.id_display_city = Object.keys(this.state.cities)[0];
-                    }
-                }
-
-                return previousState;
-            }, () => {
-                if (cityId) {
-                    this.updateCityWeatherData(cityId, 1000);
-                }
-                this.saveSettings ();
-            });
-        };
-
-        let updateSettings = this.updateSettings.bind(this);
+    /**
+     * generate tabs react element
+     * @protected
+     * @return {object[]} tabs react element*/
+    getElementTabs (){
+        let showTabContent = this.handlerShowTabContent.bind(this);
 
         let showTab = this.state.settings.showTab;
-        let tabs = [{
-            name: "weather",
-            icon: "fa-sun-o"
-        }, {
-            name: "cities",
-            icon: "fa-map-marker"
-        }, {
-            name: "settings",
-            icon: "fa-cogs"
-        }].map((tab) => {
+        return this.tabsStruct.map((tab) => {
             let classTab = css.tab  + (showTab==tab.name ? " " + css.active : '');
             classTab += (tab.name=="cities" ? " " + css.tab_cities:"");
 
@@ -128,112 +111,187 @@ class WeatherApp extends React.Component {
                 </div>
             );
         });
-
-        return (
-            <div className={css.weather_container}>
-                <div className={css.tabs}>
-                    {tabs}
-                </div>
-                <Weather cities={this.state.cities} settings={this.state.settings}
-                         changeShowCity={changeShowCity}/>
-                <Settings settings={this.state.settings} updateSettings={updateSettings}/>
-                <Cities settings={this.state.settings} cities={this.state.cities} changeCitiesList={changeCitiesList}/>
-            </div>
-        )
     }
 
-    updateCitiesWeatherData (){
-        //первым обновляем город выводимый по умолчанию
-        let indexDisplayCity = this.state.settings.id_display_city;
-        let citiesKey = Object.keys(this.state.cities);
+    /**
+     * update all cities from source data API
+     * @protected
+     * @param {object} prevState - previous state
+     * @return {object} new update cities data*/
+    async updateCitiesWeatherData (prevState){
+        //todo: return state with message miss API key
+        if (!prevState.settings.API.openweathermap.key)
+            return prevState;
 
+        let indexDisplayCity = prevState.settings.id_display_city;
+        let cities = Object.assign({}, prevState.cities);
+
+        //if display city not define, get first in list cities
+        /*if (!indexDisplayCity && cities[0]!=null) {
+            prevState.settings.id_display_city = cities[0].id;
+        }*/
+
+        //update first display city
+        let citiesKey = Object.keys(cities);
         citiesKey.sort((a, b) => {
             return a == indexDisplayCity? -1: 1;
         });
 
         //todo: убрать когда состояние не будет сразу обновлятся после поиска нового города
-        let timeout = 1000;
-        let cities = this.state.cities;
+        //let timeout = 1000;
+        let timeout = 0;
         for (let key of citiesKey) {
             let cityId = cities[key].id;
-            this.updateCityWeatherData (cityId, timeout);
+            let cityData = await this.updateCityWeatherData ({
+                appid: prevState.settings.API.openweathermap.key,
+                units: prevState.settings.unit_measure,
+                lang: prevState.settings.lang,
+                id: cityId
+
+            }, prevState.units);
+            cities[cityId] = cityData;
 
             timeout += 2000;
         }
+
+        return cities;
     }
 
-    updateCityWeatherData (cityId, timeout){
-        if (!this.state.settings.API.openweathermap.key)
-            return false;
+    /**
+     * update city from source data API
+     * @protected
+     * @param {number} cityId - previous state
+     * @param {number} [timeout] - previous state
+     * @return {object} update city data*/
+    async updateCityWeatherData (options, units){
+        let dataSource = new DSOpenWeather ();
 
-        //если выводимый город не задан, берем первый обновляемый
-        if (!this.state.settings.id_display_city) {
-            this.setState((previousState) => {
-                previousState.settings.id_display_city = cityId;
-                return previousState
-            });
-        }
-
-        let dataSource = new DSOpenWeather ({
-            key: this.state.settings.API.openweathermap.key,
-            unit: this.state.settings.unit_measure,
-            lang: this.state.settings.lang
-        });
-
-        let handlerUpdateCityWeatherData = this.handlerUpdateCityWeatherData.bind(this);
-        dataSource.getDataMethod({
+        let data = await dataSource.getDataMethod({
             method: 'weather',
-            param: {
-                id: cityId
-            },
-            handler: handlerUpdateCityWeatherData,
-            timeout: timeout
+            param: options
         });
-
-        timeout += 1000;
-
-        dataSource.getDataMethod({
-            method: 'forecast',
-            param: {
-                id: cityId,
-                cnt: 4
-            },
-            handler: handlerUpdateCityWeatherData,
-            timeout: timeout
-        });
-        return true;
-    }
-
-    handlerUpdateCityWeatherData (data, dataError){
-        if (data==null){
-            if (dataError.cod==404)
-                console.log("Город не найден");
-            else
-                console.log(data.message);
-        }
+        data = DecorateWeatherData.getDecorateData(data, units);
 
         //console.log(data);
 
-        data = DecorateWeatherData.getDecorateData(data, this.state.units);
+        options.cnt = 4;
+        let dataForecast = await dataSource.getDataMethod({
+            method: 'forecast',
+            param: options
+        });
+        dataForecast = DecorateWeatherData.getDecorateData(dataForecast, units);
 
-        this.setState ((previousState, currentProps) => {
-            let city = previousState.cities[data.id];
-            city.name = data.name;
-            city.country = data.country;
-            city.loc = data.loc;
+        data.weather = Object.assign(data.weather, dataForecast.weather);
+        return data;
+    }
 
-            if (!city.weather)
-                city.weather = {};
+    /**
+     * handler event change app tab
+     * @protected
+     * @param {object} event - previous state
+     */
+    handlerShowTabContent(event) {
+        let activeClass = css.active;
+        let activeTab = document.querySelector('.' + activeClass);
+        activeTab.classList.remove(activeClass);
 
-            Object.keys (data.weather).forEach((k) => {
-                city.weather [k] = data.weather[k];
+        let tab = event.currentTarget;
+        tab.classList.add(activeClass);
+
+        let settings = Object.assign({}, this.state.settings);
+        settings.showTab = tab.id;
+
+        this.setState({settings: settings});
+    };
+
+    /**
+     * handler event change display city weather
+     * @protected
+     * @param {number} idDisplayCity - id city
+     */
+    handlerChangeShowCity (idDisplayCity) {
+        let settings = Object.assign({}, this.state.settings);
+        settings.id_display_city = idDisplayCity;
+
+        this.setState ({settings: settings});
+    };
+
+    /**
+     * handler event change list city (add or remove)
+     * @protected
+     * @param {number} cityId - id city
+     * @param {boolean} isRemove - mark type operation under city add or remove
+     */
+    async handlerChangeCitiesList (cityId, isRemove) {
+        let cities = Object.assign({}, this.state.cities);
+
+        if (isRemove) {
+            delete cities[cityId];
+
+            //update ref on display cities
+            if (this.state.settings.id_display_city==cityId){
+                let settings = Object.assign({}, this.state.settings);
+                settings.id_display_city = Object.keys(cities)[0];
+
+                this.setState ({settings: settings});
+            }
+        }else{
+            cities[cityId] = await this.updateCityWeatherData({
+                appid: this.state.settings.API.openweathermap.key,
+                units: this.state.settings.unit_measure,
+                lang: this.state.settings.lang,
+                id: cityId
+
+            }, this.state.units);
+        }
+
+        this.setState ({cities: cities}, () => this.saveSettingsToStorage ());
+    };
+
+    /**
+     * handler event update value settings
+     * @protected
+     * @param {object} event - event object
+     */
+    async handlerUpdateSettings (event){
+        let nameChangeElement = event.target.name;
+        let valueChangeElement = event.target.value;
+
+        let settings = Object.assign({}, this.state.settings);
+
+        if (nameChangeElement == "keyApi"){
+            settings.API.openweathermap.key = valueChangeElement;
+        }
+
+        if (nameChangeElement == "languages") {
+            settings.lang = valueChangeElement;
+        }
+
+        if (nameChangeElement == "unitMeasure") {
+            let unitMeasure = valueChangeElement;
+
+            settings.unit_measure = unitMeasure;
+
+            let units = Object.assign({}, this.state.units);
+            let unitMeasureType = UnitMeasure.type[unitMeasure];
+            Object.keys(unitMeasureType).forEach((key)=> {
+                units[key] = unitMeasureType[key];
             });
+            this.setState ({units: units});
+        }
 
-            return previousState;
+        this.setState ({settings: settings}, async ()=> {
+            let cities = await this.updateCitiesWeatherData(this.state);
+            this.setState ({cities: cities}, () => this.saveSettingsToStorage() );
         });
     }
 
-    saveSettings () {
+    /**
+     * save app settings to browser localStorage
+     * @protected
+     * @param {object} event - event object
+     */
+    saveSettingsToStorage () {
         let localStorageSupport = 'localStorage' in window && window['localStorage'] !== null;
 
         let localStorage = window.localStorage;
@@ -247,7 +305,13 @@ class WeatherApp extends React.Component {
         localStorage.weather_app = JSON.stringify(settings);
     }
 
-    resumeSetting (){
+    /**
+     * resume app settings from browser localStorage
+     * @protected
+     * @param {object} event - event object
+     * @return {object} - settings from localStorage
+     */
+    resumeSettingFromStorage (){
         let localStorage = window.localStorage;
         let settings = localStorage.weather_app;
         if (settings)
@@ -257,40 +321,13 @@ class WeatherApp extends React.Component {
     }
 
     /**
-    * updateSettings */
-    updateSettings (event){
-        let nameChangeElement = event.target.name;
-        let valueChangeElement = event.target.value;
-
-        this.setState ((previousState, currentProps) => {
-            if (nameChangeElement == "keyApi"){
-                previousState.settings.API.openweathermap.key = valueChangeElement;
-            }
-
-            if (nameChangeElement == "languages") {
-                previousState.settings.lang = valueChangeElement;
-            }
-
-            if (nameChangeElement == "unitMeasure") {
-                let unitMeasure = valueChangeElement;
-
-                previousState.settings.unit_measure = unitMeasure;
-
-                let unitMeasureType = UnitMeasure.type[unitMeasure];
-                Object.keys(unitMeasureType).forEach((key)=> {
-                    previousState.units[key] = unitMeasureType[key];
-                });
-            }
-
-            return previousState;
-        }, () => {
-            this.saveSettings ();
-            this.updateCitiesWeatherData();
-        });
-    }
-
+     * set settings on create app
+     * @protected
+     * @param {object} stateDefault - default state struct
+     * @return {object} - settings from localStorage or default
+     */
     setSettingFromLocalOrDefault (stateDefault){
-        let storageData = this.resumeSetting();
+        let storageData = this.resumeSettingFromStorage();
 
         if (storageData){
             //восстанавливаем блок units

@@ -23,34 +23,25 @@ class DSOpenWeather {
     }
 
     constructor (options){
-        this.key = options.key;
-        this.unit = options.unit;
-        this.lang = options.lang;
-
         this.data;
     }
 
-    getDataMethod (options){
-        let {method, handler, timeout, param} = options;
+    async getDataMethod (options){
+        let {method, param} = options;
         let ctx =   this;
         let map = DSOpenWeather.API[method].map;
 
-        setTimeout(() => fetch (this.getRequestAPIMethod(method, param))
+        return await timeout(500, fetch (this.getRequestAPIMethod(method, param)))
             .then((response) => {
                 return response.json();
             })
             .then((data) => {
-                if (data.cod==200) {
-                    handler(map(data));
-                }else{
-                    handler(null, data);
-                }
+                return data.cod==200 ? map(data) : data;
             })
-            .catch((err) => {console.error(err)}), timeout);
+            .catch((err) => {console.error(err)});
     }
 
     getRequestAPIMethod (methodAPI, parametr){
-        let data = [];
         let weatherDataAPI = DSOpenWeather.API;
         let method = weatherDataAPI[methodAPI].method;
 
@@ -60,18 +51,8 @@ class DSOpenWeather {
 
         parametr = parametr ? parametr : {};
 
-        parametr = Object.keys(parametr).map((k, index, array) => {
-            return [k, parametr[k]];
-        });
-
-        let param = new Map([
-            ['APPID', this.key],
-            ['lang', this.lang],
-            ['units', this.unit]
-        ].concat(parametr));
-
-        param.forEach((value, key) => {
-            data.push(key + '='+ value);
+        let data = Object.keys(parametr).map((k, index, array) => {
+            return k + "=" + parametr[k];
         });
 
         return weatherDataAPI.URL + method + '?' +  data.join('&');
@@ -86,6 +67,7 @@ class DSOpenWeather {
             lon: data.coord.lon,
             lat: data.coord.lat
         };
+        model.code = data.cod;
 
         let dataWeather = data.weather[0];
         model.weather = {};
@@ -160,6 +142,7 @@ class DSOpenWeather {
             lon: data.city.coord.lon,
             lat: data.city.coord.lat
         };
+        model.code = data.cod;
 
         model.weather = {};
 
@@ -220,6 +203,14 @@ class DSOpenWeather {
 function getDateWithoutTime (d){
     let date = new Date(d);
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function timeout(ms, promise) {
+    return new Promise(function(resolve, reject) {
+        setTimeout(()=> {
+            promise.then(resolve, reject)
+        }, ms);
+    })
 }
 
 export default DSOpenWeather;

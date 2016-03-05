@@ -13,10 +13,6 @@ const DEGREE_CHAR_CODE = 176;
 const DEGREE_CHAR = String.fromCharCode(DEGREE_CHAR_CODE);
 
 class Settings extends React.Component{
-    constructor (props){
-        super (props);
-    }
-
     render (){
         let classTabContent = css.tab_container + (this.props.settings.showTab=='settings' ? '' : " " + css.hide_tab);
         let updateSettings = this.props.updateSettings;
@@ -89,7 +85,7 @@ let RadioElement = (props) => {
         return (
             <div key={id}>
                 <input type="radio" id={id} name={props.name}
-                       value={id} checked={props.current==id} onChange={props.updateSettings}/>
+                       value={id} defaultChecked={props.current==id} onChange={props.updateSettings}/>
                 <label htmlFor={id}>{name}</label>
             </div>
         );
@@ -110,7 +106,8 @@ let SelectElement = (props) => {
     });
 
     return (
-        <select className={css_settings.control__select} name={props.name} onChange={props.updateSettings} defaultValue={props.current}>{collection}</select>
+        <select className={css_settings.control__select} name={props.name} onChange={props.updateSettings}
+                defaultValue={props.current}>{collection}</select>
     );
 };
 

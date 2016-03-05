@@ -30,8 +30,6 @@ class Cities extends React.Component {
     }
 
     componentWillReceiveProps (){
-        console.log("componentWillReceiveProps ");
-
         this.updateGeolocation();
     }
 
@@ -49,44 +47,10 @@ class Cities extends React.Component {
     render() {
         let classTabContent = css.tab_container + (this.props.settings.showTab == 'cities' ? '' : " " + css.hide_tab);
 
-        let handlerClick = (event) => {
-            if (event.type=='keydown' && event.nativeEvent.keyCode!=KEY_CODE_ENTER){
-                event.stopPropagation();
-                return;
-            }
-
-            if (!this.props.settings.API.openweathermap.key)
-                return false;
-
-            let dataSource = new DSOpenWeather({
-                key: this.props.settings.API.openweathermap.key,
-                unit: this.props.settings.unit_measure,
-                lang: this.props.settings.lang
-            });
-
-            dataSource.getDataMethod ({
-                method: 'weather',
-                param: {
-                    q: this.refs.city.value
-                },
-                handler: (data, dataError) => {
-                    if (data==null){
-                        if (dataError.cod==404)
-                            console.log("Город не найден");
-                        else
-                            console.log(dataError.message);
-                    }else{
-                        this.props.changeCitiesList(data.id);
-                    }
-                },
-                timeout: 1000
-            });
-
-            return true;
-        };
+        let handlerClick = this.handlerFindCityByName.bind(this);
 
         let handlerRemove = (event) => {
-            this.props.changeCitiesList(null, event.currentTarget.parentNode.id);
+            this.props.changeCitiesList(event.currentTarget.parentNode.id, true);
         };
 
         let saveCities = this.props.cities;
@@ -145,9 +109,34 @@ class Cities extends React.Component {
         )
     }
 
+    async handlerFindCityByName (event){
+        if (event.type=='keydown' && event.nativeEvent.keyCode!=KEY_CODE_ENTER){
+            event.stopPropagation();
+            return false;
+        }
+
+        if (!this.props.settings.API.openweathermap.key)
+            return false;
+
+        let data = await this.findCity ({
+            q: this.refs.city.value,
+            appid: this.props.settings.API.openweathermap.key,
+            units: this.props.settings.unit_measure,
+            lang: this.props.settings.lang
+        });
+
+        if (data.code==200){
+            this.props.changeCitiesList(data.id, false);
+        }else{
+            console.log(data.code==404 ? "Город не найден" : data.message);
+        }
+
+        return true;
+    }
+
     updateGeolocation (){
         if ("geolocation" in navigator) {
-            console.log("geolocation is available");
+            //console.log("geolocation is available");
 
             if (!this.props.settings.API.openweathermap.key)
                 return false;
@@ -158,64 +147,67 @@ class Cities extends React.Component {
                     return false;
                 }
 
-                let dataSource = new DSOpenWeather({
-                    key: this.props.settings.API.openweathermap.key,
-                    unit: this.props.settings.unit_measure,
-                    lang: this.props.settings.lang
-                });
-
-                dataSource.getDataMethod ({
-                    method: 'weather',
-                    param: {
-                        lon: position.coords.longitude,
-                        lat: position.coords.latitude
-                    },
-                    handler: (data, dataError) => {
-                        if (data==null){
-                            if (dataError.cod==404)
-                                console.log("Город не найден");
-                            else
-                                console.log(dataError.message);
-                        }else{
-                            this.props.changeCitiesList(data.id);
-
-                            this.setState ((previousState, currentProps) => {
-                                let point = previousState.point;
-                                point.id = data.id;
-                                point.name= data.name;
-                                point.country = data.country;
-                                point.loc.lat = Math.round(position.coords.latitude);
-                                point.loc.lon = Math.round(position.coords.longitude);
-                                point.updateDate = new Date();
-
-                                return previousState;
-                            });
-                        }
-                    },
-                    timeout: 1000
-                });
+                this.updateCityDataByPosition(position);
             };
 
             let geo_error = () => {
-                console.log("Sorry, no position available.");
+                //console.log("Sorry, no position available.");
             };
 
             var geo_options = {
                 enableHighAccuracy: false
             };
 
-            console.log("geolocation");
+            //console.log("geolocation");
 
             let watchID = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);
-            this.setState ((previousState, currentProps) => {
+            this.setState ((previousState) => {
                 let point = previousState.point;
                 point.watchID = watchID;
 
                 return previousState;
             });
         } else {
-            console.log("geolocation IS NOT available");
+            //console.log("geolocation IS NOT available");
         }
+    }
+
+    async updateCityDataByPosition (position){
+        let data = await this.findCity ({
+            lon: position.coords.longitude,
+            lat: position.coords.latitude,
+            appid: this.props.settings.API.openweathermap.key,
+            units: this.props.settings.unit_measure,
+            lang: this.props.settings.lang
+        });
+
+        if (data.code==200){
+            this.props.changeCitiesList(data.id, false);
+
+            this.setState ((previousState, currentProps) => {
+                let point = previousState.point;
+                point.id = data.id;
+                point.name= data.name;
+                point.country = data.country;
+                point.loc.lat = Math.round(position.coords.latitude);
+                point.loc.lon = Math.round(position.coords.longitude);
+                point.updateDate = new Date();
+
+                return previousState;
+            });
+        }else{
+            console.log(data.code==404 ? "Город не найден" : data.message);
+        }
+    }
+
+    async findCity (options, units){
+        let dataSource = new DSOpenWeather ();
+        let data = await dataSource.getDataMethod({
+            method: 'weather',
+            param: options
+        });
+
+        return data;
     }
 }
 
