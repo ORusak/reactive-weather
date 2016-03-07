@@ -16,37 +16,24 @@ const KEY_CODE_ENTER = 13;
  * @author Oleg Rusak
  * */
 class Cities extends React.Component {
-    constructor (props){
-        super (props);
-
-        //state city find geo location
-        this.state = {
-            point: {
-                name: 'City?',
-                country: 'Country?',
-                loc: {
-                    lat: '?',
-                    lon: '?'
-                },
-                watchID: '',
-                updateDate: ''
-            }
-        };
-    }
-
-    componentWillReceiveProps (){
-        this.updateGeolocation();
+    componentWillReceiveProps (nextProps){
+        if (nextProps.point.isUpdate) {
+            this.updateCityDataByPosition();
+        }
     }
 
     componentWillUnmount (){
-        navigator.geolocation.clearWatch(this.state.watchID);
+        navigator.geolocation.clearWatch(this.props.point.watchID);
+    }
+
+    componentDidMount (){
+        this.updateGeolocation();
     }
 
     render() {
-        //todo: добавить вывод сообщений при остутствии поддержки геолокации
-        //todo: добавить вывод предупреждения если не заполнен ключ
-        //if (!this.state.settings.API.openweathermap.key)
-        //todo: добавить вывод карты по координатам?
+        //todo: message on disabled geolocaton
+        //todo: message on key API not exist
+        //todo: add display mini map by coord
 
         let classTabContent = css.tab_container + (this.props.settings.showTab == 'cities' ? '' : " " + css.hide_tab);
 
@@ -68,7 +55,7 @@ class Cities extends React.Component {
             )
         });
 
-        let updateDate = DecorateWeatherData.getFormattedDate(this.state.point.updateDate, {
+        let updateDate = DecorateWeatherData.getFormattedDate(this.props.point.updateDate, {
             hour: "2-digit",
             minute: "2-digit"
         });
@@ -79,10 +66,10 @@ class Cities extends React.Component {
                     <label className={css.field__label}>Weather from current position</label>
                     <div className={css.field__control}>
                         <div>
-                            {`${this.state.point.name} (${this.state.point.country})`}
+                            {`${this.props.point.name} (${this.props.point.country})`}
                         </div>
                         <div>
-                            Latitude {this.state.point.loc.lat} Longitude {this.state.point.loc.lon}
+                            Latitude {this.props.point.lat} Longitude {this.props.point.lon}
                         </div>
                         <div>
                             Update {updateDate}
@@ -133,7 +120,7 @@ class Cities extends React.Component {
         if (data.code==200){
             this.props.changeCitiesList(data.id, false);
         }else{
-            console.log(data.code==404 ? "Город не найден" : data.message);
+            console.log(data.code==404 ? "City not found" : data.message);
         }
 
         return true;
@@ -144,19 +131,21 @@ class Cities extends React.Component {
      * @protected
      */
     updateGeolocation (){
+
         if ("geolocation" in navigator) {
             //console.log("geolocation is available");
 
-            if (!this.props.settings.API.openweathermap.key)
-                return false;
+            /*if (!this.props.settings.API.openweathermap.key)
+                return false;*/
 
             let geo_success = (position) => {
-                if (this.state.point.loc.lat==Math.round(position.coords.latitude) &&
-                    this.state.point.loc.lon==Math.round(position.coords.longitude)){
-                    return false;
-                }
-
-                this.updateCityDataByPosition(position);
+                this.props.changeGeoPoint ({
+                    lat: Math.round(position.coords.latitude),
+                    lon: Math.round(position.coords.longitude),
+                    updateDate: new Date(),
+                    isUpdate:   this.props.point.lat!=Math.round(position.coords.latitude) ||
+                                this.props.point.lon!=Math.round(position.coords.longitude)
+                });
             };
 
             let geo_error = () => {
@@ -165,15 +154,15 @@ class Cities extends React.Component {
 
             var geo_options = {
                 enableHighAccuracy: false,
-                maximumAge        : 30000,
-                timeout           : 15000
+                maximumAge        : 3000,
+                timeout           : 1500
             };
 
             let watchID = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);
 
-            let point = Object.assign({}, this.state.point);
-            point.watchID = watchID;
-            this.setState ({point: point});
+            this.props.changeGeoPoint ({
+                watchID: watchID
+            });
         } else {
             console.log("geolocation IS NOT available");
         }
@@ -184,34 +173,49 @@ class Cities extends React.Component {
      * @protected
      * @param {object} position - React event
      */
-    async updateCityDataByPosition (position){
+    async updateCityDataByPosition (){
+        if (!this.props.settings.API.openweathermap.key || !this.props.point.lon || !this.props.point.lat) return;
+
         let data = await this.findCity ({
-            lon: position.coords.longitude,
-            lat: position.coords.latitude,
+            lon: this.props.point.lon,
+            lat: this.props.point.lat,
             appid: this.props.settings.API.openweathermap.key,
             units: this.props.settings.unit_measure,
             lang: this.props.settings.lang
         });
 
-        if (data.code==200){
-            this.props.changeCitiesList(data.id, false);
+        if (data) {
+            if (data.code == 200) {
+                this.props.changeCitiesList(data.id, false);
 
-            let point = Object.assign({}, this.state.point);
-            point.id = data.id;
-            point.name= data.name;
-            point.country = data.country;
-            point.loc.lat = Math.round(position.coords.latitude);
-            point.loc.lon = Math.round(position.coords.longitude);
-            point.updateDate = new Date();
+                this.props.changeGeoPoint ({
+                    id: data.id,
+                    name: data.name,
+                    country: data.country,
+                    isUpdate: false
+                });
+            } else {
+                //update new cycle watchPosition
+                this.props.changeGeoPoint ({
+                    lat: '',
+                    lon: ''
+                });
 
-            this.setState ({point: point});
+                console.log(data.code == 404 ? "City not found" : data.message);
+            }
         }else{
-            console.log(data.code==404 ? "Город не найден" : data.message);
+            //update new cycle watchPosition
+            this.props.changeGeoPoint ({
+                lat: '',
+                lon: ''
+            });
+
+            console.log("Data not receive");
         }
     }
 
     /**
-     * update city weather data by geo coord. invoke parent handler update city state.
+     * request method weather API
      * @protected
      * @param {object} options - method parameter request in API
      * @return {object} - weather data from API
@@ -220,7 +224,8 @@ class Cities extends React.Component {
         let dataSource = new DSOpenWeather ();
         let data = await dataSource.getDataMethod({
             method: 'weather',
-            param: options
+            param: options,
+            delay: 2000
         });
 
         return data;
@@ -228,7 +233,7 @@ class Cities extends React.Component {
 }
 
 
-//todo: добавить вывод результата поиска и подтверждение добавления в список
+//todo: add preview find city before add in app cities list
 /**
  * (draft) Stateless component display find data city before confirm user
  * @exports Cities

@@ -5,6 +5,9 @@
 import css from './../style.styl';
 import css_settings from './settings.styl';
 
+import SelectElement from './../common/select-element.jsx';
+import RadioElement from './../common/radio-element.jsx';
+
 import {UnitMeasure, Languages} from './../lib/unit-measure';
 
 const DEGREE_CHAR_CODE = 176;
@@ -19,7 +22,6 @@ class Settings extends React.Component{
     render (){
         let classTabContent = css.tab_container + (this.props.settings.showTab=='settings' ? '' : " " + css.hide_tab);
         let updateSettings = this.props.updateSettings;
-        let currentUnitMeasure = this.props.settings.unit_measure;
 
         let listUnits = Object.keys(UnitMeasure.type).map((key) => {
             return {name: key, value: key};
@@ -38,21 +40,21 @@ class Settings extends React.Component{
                 <div className={css.field}>
                     <label className={css.field__label}>API Key (<a href="http://openweathermap.org/appid">get key</a>)</label>
                     <div className={css.field__control}>
-                        <textarea className={css_settings.control__textarea} name="keyApi" defaultValue={this.props.settings.API.openweathermap.key}
-                                  onChange={updateSettings}/>
+                        <textarea className={css_settings.control__textarea} name="keyApi"
+                                  defaultValue={this.props.settings.API.openweathermap.key} onChange={updateSettings}/>
                     </div>
                 </div>
                 <div className={css.field}>
-                    <label className={css.field__label}>Data receive languages</label>
+                    <label className={css.field__label}>Languages data receive</label>
                     <div className={css.field__control}>
-                        <SelectElement name="languages" list={Languages} current={this.props.settings.lang}
-                                  updateSettings={updateSettings}/>
+                        <SelectElement className={css_settings.control__select} name="languages" list={Languages}
+                                       current={this.props.settings.lang} updateSettings={updateSettings}/>
                     </div>
                 </div>
                 <div className={css.field}>
                     <label className={css.field__label}>Unit measure</label>
                     <div className={css.field__control}>
-                        <RadioElement name="unitMeasure" list={listUnits} current={currentUnitMeasure}
+                        <RadioElement name="unitMeasure" list={listUnits} current={this.props.settings.unit_measure}
                                   updateSettings={updateSettings}/>
                     </div>
                 </div>
@@ -67,6 +69,11 @@ class Settings extends React.Component{
     }
 }
 
+/**
+ * Stateless component display preview unit measures
+ * @exports UnitExample
+ * @author Oleg Rusak
+ * */
 let UnitExample = (props) => {
     let currentUnitMeasure = props.unitType;
     let measure = UnitMeasure.type[currentUnitMeasure];
@@ -78,49 +85,6 @@ let UnitExample = (props) => {
             <div>Pressure: {UnitMeasure.pressure_example}{UnitMeasure.pressure}</div>
             <div>Precipitation: {UnitMeasure.precipitation_example}{UnitMeasure.precipitation}</div>
         </div>
-    );
-};
-
-/**
- * Stateless component display element collection radio button
- * @exports RadioElement
- * @author Oleg Rusak
- * */
-let RadioElement = (props) => {
-    let collection = props.list.map (elem => {
-        let id = elem.value;
-        let name = elem.name;
-        return (
-            <div key={id}>
-                <input type="radio" id={id} name={props.name}
-                       value={id} defaultChecked={props.current==id} onChange={props.updateSettings}/>
-                <label htmlFor={id}>{name}</label>
-            </div>
-        );
-    });
-
-    return (
-        <div>{collection}</div>
-    );
-};
-
-/**
- * Stateless component display element select
- * @exports SelectElement
- * @author Oleg Rusak
- * */
-let SelectElement = (props) => {
-    let collection = props.list.map (elem => {
-        let id = elem.value;
-        let name = elem.name;
-        return (
-            <option key={id} value={id}>{name}</option>
-        );
-    });
-
-    return (
-        <select className={css_settings.control__select} name={props.name} onChange={props.updateSettings}
-                defaultValue={props.current}>{collection}</select>
     );
 };
 

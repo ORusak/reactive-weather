@@ -8,13 +8,13 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 const LANG = process.env.LANG || "ru";
 
 //todo: babel transform-runtime
-//проблема добавляет все возможности в файл
+//add bigger reference in bundle. not influence?
 
 module.exports = {
     entry: ['babel-polyfill',"./app/main.jsx"],
     output: {
         path: __dirname + "/public",
-        filename: "weather.js"
+        filename: NODE_ENV=="production" ? "weather.min.js":"weather.js"
     },
     devtool: NODE_ENV=="development"?"cheap-inline-module-source-map":"source-map",
     watch: NODE_ENV=="development",
@@ -29,7 +29,7 @@ module.exports = {
                 test: /\.styl$/,
                 //loader: ExtractTextPlugin.extract("css-loader!stylus-loader")
                 loader: "style-loader!css-loader?localIdentName=" +
-                (process.env.NODE_ENV=="development"?
+                (NODE_ENV=="development"?
                     "[name]__[local]___[hash:base64:5]" :
                     "[hash:base64:5]") +
                 "!stylus-loader"

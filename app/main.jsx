@@ -6,9 +6,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import WeatherApp from './app.jsx'
+import WeatherApp from './app.jsx';
 
-//todo: подключить font-awesome через webpack
+//todo: link font-awesome through webpack
 
 ReactDOM.render(
     <WeatherApp />,

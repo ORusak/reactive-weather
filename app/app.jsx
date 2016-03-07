@@ -12,13 +12,8 @@ import DSOpenWeather from './lib/open-weather.js';
 import DecorateWeatherData from './lib/decorateWeatherData';
 import {UnitMeasure} from './lib/unit-measure';
 
-//todo: ленивую подгрузку остальных табов, webpack hot reload
-
-//todo: поддержку мультиязычности
-
-//todo: специальный город текущее местоположение
-
-//todo: вывод осадков
+//todo: lazy load tabs, webpack hot reload
+//todo: add support multi languages app interface
 
 /**
  * Component general logic weather app
@@ -47,7 +42,7 @@ class WeatherApp extends React.Component {
             },
             settings: {
                 unit_measure: "metric",
-                lang: '',
+                lang: 'en',
                 API: {
                     openweathermap: {
                         key: ''
@@ -56,8 +51,16 @@ class WeatherApp extends React.Component {
                 showTab: "",
                 id_display_city: ""
             },
-
             cities: {
+            },
+            point: {
+                name: 'City?',
+                country: 'Country?',
+                lat: '',
+                lon: '',
+                watchID: '',
+                updateDate: '',
+                isUpdate: false
             }
         };
 
@@ -72,8 +75,8 @@ class WeatherApp extends React.Component {
     render (){
         let changeShowCity = this.handlerChangeShowCity.bind(this);
         let changeCitiesList = this.handlerChangeCitiesList.bind(this);
-
         let updateSettings = this.handlerUpdateSettings.bind(this);
+        let changeGeoPoint = this.handlerChangeGeoPoint.bind(this);
 
         return (
             <div className={css.weather_container}>
@@ -83,7 +86,8 @@ class WeatherApp extends React.Component {
                 <Weather cities={this.state.cities} settings={this.state.settings}
                          changeShowCity={changeShowCity}/>
                 <Settings settings={this.state.settings} updateSettings={updateSettings}/>
-                <Cities settings={this.state.settings} cities={this.state.cities} changeCitiesList={changeCitiesList}/>
+                <Cities settings={this.state.settings} cities={this.state.cities} point={this.state.point}
+                        changeCitiesList={changeCitiesList} changeGeoPoint={changeGeoPoint}/>
             </div>
         )
     }
@@ -117,7 +121,7 @@ class WeatherApp extends React.Component {
     async updateCitiesWeatherData (prevState){
         //todo: return state with message miss API key
         if (!prevState.settings.API.openweathermap.key)
-            return prevState;
+            return prevState.cities;
 
         let indexDisplayCity = prevState.settings.id_display_city;
         let cities = Object.assign({}, prevState.cities);
@@ -133,7 +137,6 @@ class WeatherApp extends React.Component {
             return a == indexDisplayCity? -1: 1;
         });
 
-        //todo: убрать когда состояние не будет сразу обновлятся после поиска нового города
         for (let key of citiesKey) {
             let cityId = cities[key].id;
             let cityData = await this.updateCityWeatherData ({
@@ -216,18 +219,18 @@ class WeatherApp extends React.Component {
      */
     async handlerChangeCitiesList (cityId, isRemove) {
         let cities = Object.assign({}, this.state.cities);
+        let settings = Object.assign({}, this.state.settings);
 
         if (isRemove) {
             delete cities[cityId];
 
             //update ref on display cities
             if (this.state.settings.id_display_city==cityId){
-                let settings = Object.assign({}, this.state.settings);
                 settings.id_display_city = Object.keys(cities)[0];
-
-                this.setState ({settings: settings});
             }
         }else{
+            if (cities[cityId]) return;
+
             cities[cityId] = await this.updateCityWeatherData({
                 appid: this.state.settings.API.openweathermap.key,
                 units: this.state.settings.unit_measure,
@@ -235,9 +238,14 @@ class WeatherApp extends React.Component {
                 id: cityId
 
             }, this.state.units);
+
+            //update ref on display cities
+            if (!this.state.settings.id_display_city){
+                settings.id_display_city = Object.keys(cities)[0];
+            }
         }
 
-        this.setState ({cities: cities}, () => this.saveSettingsToStorage ());
+        this.setState ({cities: cities, settings: settings}, () => this.saveSettingsToStorage ());
     };
 
     /**
@@ -260,12 +268,10 @@ class WeatherApp extends React.Component {
         }
 
         if (nameChangeElement == "unitMeasure") {
-            let unitMeasure = valueChangeElement;
-
-            settings.unit_measure = unitMeasure;
+            settings.unit_measure = valueChangeElement;
 
             let units = Object.assign({}, this.state.units);
-            let unitMeasureType = UnitMeasure.type[unitMeasure];
+            let unitMeasureType = UnitMeasure.type[valueChangeElement];
             Object.keys(unitMeasureType).forEach((key)=> {
                 units[key] = unitMeasureType[key];
             });
@@ -274,8 +280,29 @@ class WeatherApp extends React.Component {
 
         this.setState ({settings: settings}, async ()=> {
             let cities = await this.updateCitiesWeatherData(this.state);
-            this.setState ({cities: cities}, () => this.saveSettingsToStorage() );
+            let listCities = Object.keys(cities);
+            if(listCities.length==0){
+                return;
+            }
+
+            //update ref id_display_city
+            let newSettings = Object.assign({}, this.state.settings);
+            if(!this.state.settings.id_display_city && listCities.length!=0){
+                newSettings.id_display_city = listCities[0].id;
+            }
+
+            this.setState ({cities: cities, settings: newSettings}, () => this.saveSettingsToStorage() );
         });
+    }
+
+    /**
+     * handler event update point geo location
+     * @protected
+     * @param {object} newPoint - data point
+     */
+    handlerChangeGeoPoint (newPoint){
+        let point = Object.assign({}, this.state.point, newPoint);
+        this.setState ({point: point});
     }
 
     /**
@@ -285,6 +312,9 @@ class WeatherApp extends React.Component {
      */
     saveSettingsToStorage () {
         let localStorageSupport = 'localStorage' in window && window['localStorage'] !== null;
+        //todo: show user message
+        if (!localStorageSupport)
+            return;
 
         let localStorage = window.localStorage;
         let settings = {};

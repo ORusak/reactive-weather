@@ -41,11 +41,10 @@ class DSOpenWeather {
      * @param {object} options - name method, param method
      * @return {object} - method weather data*/
     async getDataMethod (options){
-        let {method, param} = options;
-        let ctx =   this;
+        let {method, param, delay=1000} = options;
         let map = DSOpenWeather.API[method].map;
 
-        return await timeout(500, fetch (this.getRequestAPIMethod(method, param)))
+        return await timeout(delay, fetch (this.getRequestAPIMethod(method, param)))
             .then((response) => {
                 return response.json();
             })
@@ -99,8 +98,7 @@ class DSOpenWeather {
 
         let date = getDateWithoutTime(parseInt(data.dt)*1000);
 
-        //todo: date.getTime() change on +date
-        model.weather[date.getTime()] = {
+        model.weather[+date] = {
             date: date,
             mode_id: dataWeather.id,
             name: dataWeather.main,
@@ -200,9 +198,9 @@ class DSOpenWeather {
             let date = getDateWithoutTime (parseInt(dataDayWeather.dt)*1000);
 
             //сегодняшний день получаем через запрос к weather. он более подробный
-            if (date.getTime() == millsToday) continue;
+            if (+date == millsToday) continue;
 
-            model.weather[date.getTime()] = {
+            model.weather[+date] = {
                 mode_id: dataWeather.id,
                 date: date,
                 name: dataWeather.main,
