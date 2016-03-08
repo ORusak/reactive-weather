@@ -139,12 +139,15 @@ class Cities extends React.Component {
                 return false;*/
 
             let geo_success = (position) => {
+                let lat = position.coords.latitude.toFixed(3);
+                let lon = position.coords.longitude.toFixed(3);
+
                 this.props.changeGeoPoint ({
-                    lat: Math.round(position.coords.latitude),
-                    lon: Math.round(position.coords.longitude),
+                    lat: lat,
+                    lon: lon,
                     updateDate: new Date(),
-                    isUpdate:   this.props.point.lat!=Math.round(position.coords.latitude) ||
-                                this.props.point.lon!=Math.round(position.coords.longitude)
+                    isUpdate:   this.props.point.lat!=lat ||
+                                this.props.point.lon!=lon
                 });
             };
 

@@ -279,6 +279,8 @@ class WeatherApp extends React.Component {
         }
 
         this.setState ({settings: settings}, async ()=> {
+            this.saveSettingsToStorage();
+
             let cities = await this.updateCitiesWeatherData(this.state);
             let listCities = Object.keys(cities);
             if(listCities.length==0){
