@@ -17,7 +17,7 @@ const KEY_CODE_ENTER = 13;
  * */
 class Cities extends React.Component {
     componentWillReceiveProps (nextProps){
-        if (nextProps.point.isUpdate) {
+        if (nextProps.point.isUpdate || !nextProps.point.name) {
             this.updateCityDataByPosition();
         }
     }
@@ -66,7 +66,7 @@ class Cities extends React.Component {
                     <label className={css.field__label}>Weather from current position</label>
                     <div className={css.field__control}>
                         <div>
-                            {`${this.props.point.name} (${this.props.point.country})`}
+                            {`${this.props.point.name || "City?"} (${this.props.point.country || "Country?"})`}
                         </div>
                         <div>
                             Latitude {this.props.point.lat} Longitude {this.props.point.lon}
@@ -157,8 +157,8 @@ class Cities extends React.Component {
 
             var geo_options = {
                 enableHighAccuracy: false,
-                maximumAge        : 3000,
-                timeout           : 1500
+                maximumAge        : 30000,
+                timeout           : 27000
             };
 
             let watchID = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);

@@ -31,7 +31,7 @@ set NODE_ENV=test
 npm test
 ```
 
-Note: environment tested only os windows.
+Note: environment tested only os windows; browsers firefox, google chrome.
 
 # Requirement
 

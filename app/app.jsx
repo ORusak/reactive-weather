@@ -54,8 +54,8 @@ class WeatherApp extends React.Component {
             cities: {
             },
             point: {
-                name: 'City?',
-                country: 'Country?',
+                name: '',
+                country: '',
                 lat: '',
                 lon: '',
                 watchID: '',
@@ -68,7 +68,11 @@ class WeatherApp extends React.Component {
     }
 
     async componentDidMount (){
-        let cities = await this.updateCitiesWeatherData (this.state);
+        let cities = await this.updateDisplayCityWeatherData (this.state);
+        this.setState({cities: cities});
+
+        //todo: update other cities without display city
+        cities = await this.updateCitiesWeatherData (this.state);
         this.setState({cities: cities});
     }
 
@@ -125,17 +129,7 @@ class WeatherApp extends React.Component {
 
         let indexDisplayCity = prevState.settings.id_display_city;
         let cities = Object.assign({}, prevState.cities);
-
-        //if display city not define, get first in list cities
-        /*if (!indexDisplayCity && cities[0]!=null) {
-            prevState.settings.id_display_city = cities[0].id;
-        }*/
-
-        //update first display city
         let citiesKey = Object.keys(cities);
-        citiesKey.sort((a, b) => {
-            return a == indexDisplayCity? -1: 1;
-        });
 
         for (let key of citiesKey) {
             let cityId = cities[key].id;
@@ -148,6 +142,31 @@ class WeatherApp extends React.Component {
             }, prevState.units);
             cities[cityId] = cityData;
         }
+
+        return cities;
+    }
+
+    /**
+     * update display city from source data API
+     * @protected
+     * @param {object} prevState - previous state
+     * @return {object} new update city data*/
+    async updateDisplayCityWeatherData (prevState){
+        //todo: return state with message miss API key
+        if (!prevState.settings.API.openweathermap.key)
+            return prevState.cities;
+
+        let indexDisplayCity = prevState.settings.id_display_city;
+        let cities = Object.assign({}, prevState.cities);
+
+        let cityData = await this.updateCityWeatherData ({
+                appid: prevState.settings.API.openweathermap.key,
+                units: prevState.settings.unit_measure,
+                lang: prevState.settings.lang,
+                id: indexDisplayCity
+
+            }, prevState.units);
+        cities[indexDisplayCity] = cityData;
 
         return cities;
     }
