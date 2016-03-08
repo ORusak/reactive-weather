@@ -35,6 +35,7 @@ dwsync.xml
 node_modules
 bower_components
 public
+test/tmp
 .hg
 .svn
 publish

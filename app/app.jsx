@@ -334,6 +334,11 @@ class WeatherApp extends React.Component {
      * @return {object} - settings from localStorage
      */
     resumeSettingFromStorage (){
+        let localStorageSupport = 'localStorage' in window && window['localStorage'] !== null;
+        //todo: show user message
+        if (!localStorageSupport)
+            return;
+
         let localStorage = window.localStorage;
         let settings = localStorage.weather_app;
         if (settings)

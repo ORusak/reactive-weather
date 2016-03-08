@@ -1,7 +1,13 @@
 # Description
 Status: release candidate.
 
-One page application for show forecast weather (ReactJS).
+One page application for show forecast weather.
+
+* ReactJS
+* webpack
+* mocha/enzyme/should
+* gulp
+* babel
 
 Install: 
 set NODE_ENV=production
@@ -16,6 +22,14 @@ Application start:
 ```
 public/index.html
 ```
+
+Test:
+set NODE_ENV=test
+```
+npm test
+```
+
+Note: environment tested only os windows.
 
 # Requirement
 
@@ -50,6 +64,8 @@ Original requirement: https://gist.github.com/beshkenadze/3e3cfc70a9411d54ecd4
     * Layout
         * responsive with some adapt by landscape
         * icon weather state from openweathermap.org
+    * application development
+        * add basic autotest
     
 * Roadmap
     * common
@@ -70,7 +86,7 @@ Original requirement: https://gist.github.com/beshkenadze/3e3cfc70a9411d54ecd4
         * add design and color
         * icon weather state use local, vector
     * application development
-        * add autotest
+        * add advanced autotest for all component
         * refactor to redux
         * lazy load tabs content
         * multi languages
