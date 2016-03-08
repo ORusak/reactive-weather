@@ -38,8 +38,6 @@ if (NODE_ENV=="test"){
     }
 }
 
-console.log(entry);
-
 module.exports = {
     entry: entry,
     output: output,
